@@ -1,0 +1,11 @@
+426330608485ce8e768dcdb6d351e4c8 *DESCRIPTION
+a4b25a4d10102edae3b55604eacf84d1 *NAMESPACE
+3020c5f134d38163177e376e1cf853c3 *R/fanc.R
+8f148ffb6bb8db28f2a87882c359d266 *R/out.fanc.R
+79860abcf4f7dceadbcaef3e0d7569dc *R/plot.fanc.R
+3e64f89cf077a3b3c441644406e3227e *R/print.fanc.R
+f6953705f3d5eac05bdceefb5963f868 *man/fanc.Rd
+535164a020f7324469fa7cbc5f63dc6d *man/out.fanc.Rd
+a8e07b131b81255c597589c39f02d573 *man/plot.fanc.Rd
+2a6f9e9e044a78154d3cfda5936d6f48 *src/Makevars
+d133957712f9a41d6580a61c1302cc29 *src/fancC_v0.8.c
