@@ -16,19 +16,30 @@ print.fanc=function(x,digits = max(3, getOption("digits") - 3),num.result = 20,.
 		 diagPsiAIC <- x$outAIC$uniquenesses
 		 rhoAIC <- x$outAIC$rho
 		 gammaAIC <- x$outAIC$gamma
-		 
+		 rho <- x$rho
+		 gamma <- x$gamma
+		 colnames(rho) <- sapply(gamma,function(x) sprintf('%3.3f',x))
+		 df <- x$df[,1]
+		 rho0 <- cbind(df,rho)
+		 colnames(rho0) <- c("df",colnames(rho))
 		 class(LambdaAIC) <- "loadings"
 
 
 #RESULT
 
-    cat("\nCall:", paste(deparse(x$call)), "\n\n")
-	cat("\nThe result of the AIC:\n")
-    cat("\nUniquenesses:\n"); print(diagPsiAIC,digits=digits);
-    print(LambdaAIC);
-    cat("\nrho:\n"); print(rhoAIC,digits=digits);
-    cat("\ngamma:\n"); print(gammaAIC,digits=digits);
+    # cat("\nCall:", paste(deparse(x$call)), "\n\n")
+	# cat("\nThe result of the AIC:\n")
+    # cat("\nUniquenesses:\n"); print(diagPsiAIC,digits=digits);
+    # print(LambdaAIC);
+    # cat("\nrho:\n"); print(rhoAIC,digits=digits);
+    # cat("\ngamma:\n"); print(gammaAIC,digits=digits);
+    # cat("\n")
+ 	# invisible(x)
+ 	
+ 	cat("\nCall:", paste(deparse(x$call)), "\n")
+    cat("\ngamma:\n"); print(gamma,digits=digits);
+    cat("\nrho:\n"); print(rho0,digits=digits);
     cat("\n")
- 	invisible(x)   
+ 	invisible(x)      
     
 }

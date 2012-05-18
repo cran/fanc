@@ -114,8 +114,8 @@ fit <- fanc(x,2)
 #output for fixed tuning parameters
 out(fit, rho=0.1, gamma=Inf)
 
-#plot solution path
-plot(fit)
+#plot solution path (the following function is executable)
+#plot(fit)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
