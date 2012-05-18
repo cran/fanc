@@ -45,6 +45,7 @@ fanc <- function(x, factors, covmat, n.obs, length.rho=20, length.gamma=5, max.g
 	
 	
 	#START!!
+	pmax_for_S <- as.integer(500)
 	m <- factors
 	xmissing <- 0
 	if(missing(x)){
@@ -66,12 +67,11 @@ fanc <- function(x, factors, covmat, n.obs, length.rho=20, length.gamma=5, max.g
 		}else{
 			x <- scale(x, scale=FALSE)[1:N,1:p] 
 		}
-		if(N>=p){
+		if(N>=p || p <= pmax_for_S){
 			covmat <- cov(x) * (N-1) / N
 			Npflag <- as.integer(1)
 			diagS <- diag(covmat)
-		}
-		if(N<p) {
+		}else{
 			covmat <- 1
 			Npflag <- as.integer(0)
 		diagS <- apply(x,2,function(x) var(x) * (N-1) / N)
@@ -183,7 +183,7 @@ fanc <- function(x, factors, covmat, n.obs, length.rho=20, length.gamma=5, max.g
 	
 	#####main#####
 #	dyn.load("/Users/hirosekei/Documents/阪大（2011年度から）/研究/Factoranalysis_LASSO/EMCD/fancC_v0.3.so")
- 	result =.Call("fancmain", Lambda, diagPsi, as.integer(N), tol1, tol2, max.count.em, max.count.cd , max.count.initial, eta, min.uniquevar, rhomatrix, as.matrix(gamma_vec), x0, diagS, covmat, Lambdainitial_rand, Npflag, dimx0, dimS)
+ 	result =.Call("fancmain", Lambda, diagPsi, as.integer(N), tol1, tol2, max.count.em, max.count.cd , max.count.initial, eta, min.uniquevar, rhomatrix, as.matrix(gamma_vec), x0, diagS, covmat, Lambdainitial_rand, Npflag, dimx0, dimS, pmax_for_S)
 #	dyn.unload("/Users/hirosekei/Documents/阪大（2011年度から）/研究/Factoranalysis_LASSO/EMCD/fancC_v0.3.so")
 
 

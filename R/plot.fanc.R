@@ -421,7 +421,7 @@ MakeInterface <- function (gchar.title)
   Max.gamma <- 1
   Step.gamma <- 1 / (N.gamma - 1)
 
-  window <- gtkWindowNew (show=TRUE)
+  window <- gtkWindowNew (show=FALSE)
   gtkWindowSetTitle (window, gchar.title)
 ##  gtkWidgetSetSizeRequest (window, info.fanc$Window.Width, info.fanc$Window.Height)
   gtkWidgetSetSizeRequest (window, info.fanc$Window.Width, -1)
@@ -563,6 +563,8 @@ MakeInterface <- function (gchar.title)
   gSignalConnect (scale.lambda, "value_changed", cbValueChangedLabelLambda, list(label.lambda, label.GFI, label.AGFI, label.AIC, label.BIC, label.CAIC))
   gSignalConnect (scale.gamma, "value_changed", cbValueChangedGamma, canvas)
   gSignalConnect (scale.gamma, "value_changed", cbValueChangedLabelGamma, list(label.gamma, label.lambda, label.GFI, label.AGFI, label.AIC, label.BIC, label.CAIC))
+  
+  window$showAll()
 }
 
 
@@ -585,6 +587,7 @@ MakeInterface <- function (gchar.title)
 ##plot.fanc
 ##gamma‚Ì’l‚ð•Ï‰»‚Å‚«‚é‚æ‚¤‚ÉC³
 plot.fanc <- function(x, Window.Height=500, ...){
+  if(dim(x$loadings)[1] > 100) stop("The number of variables must be less than or equal to 100 to plot the solution path.")
   if(Window.Height<250 || Window.Height>2000) stop("'Window.Height' must be in [250,2000].")
   if(nchar(system.file(package="RGtk2")) == 0) stop("Package 'RGtk2' is required to plot the solution path.")
   require(RGtk2, quietly=TRUE)

@@ -20,7 +20,7 @@ plot the solution path from a "fanc" object.
 This functions plots the solution paths from a "fanc" object for fixed value of gamma.  
 }
 \usage{
-\method{plot}{fanc}(x,Window.Height=500,...)
+\method{plot}{fanc}(x, Window.Height=500, ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -48,9 +48,14 @@ A window height. The default is 500.
 \value{
 NULL
 }
-%\references{
+\references{
 %% ~put references to the literature/web site here ~
-%}
+%Friedman, J. (2008).  Fast sparse regression and classification. \eqn{Technical report}, Standford University.\cr
+Hirose, K. and Yamamoto, M. (2012). 
+\emph{Sparse estimation via nonconcave penalized likelihood in a factor analysis model},\cr
+  \url{http://arxiv.org/abs/1205.5868}\cr
+  \emph{arXiv:1205.5868 (arXiv).}
+}
 \author{
 Kei Hirose\cr
 \email{mail@keihirose.com}
@@ -63,18 +68,18 @@ Kei Hirose\cr
 
 \seealso{\code{fanc} and \code{out} objects.}
 
-\examples{
-#generate data
-loadings0 <- matrix(c(rep(0.8,5),rep(0,5),rep(0,5),rep(0.8,5)),10,2)
-common.factors0 <- matrix(rnorm(50*2),50,2)
-unique.factors0 <- matrix(rnorm(50*10,sd=sqrt(0.36)),50,10)
-x <- common.factors0 \%*\% t(loadings0) + unique.factors0
+%\examples{
+%#generate data
+%loadings0 <- matrix(c(rep(0.8,5),rep(0,5),rep(0,5),rep(0.8,5)),10,2)
+%common.factors0 <- matrix(rnorm(50*2),50,2)
+%unique.factors0 <- matrix(rnorm(50*10,sd=sqrt(0.36)),50,10)
+%x <- common.factors0 \%*\% t(loadings0) + unique.factors0
 
-#fit data
-fit <- fanc(x,2)
+%#fit data
+%fit <- fanc(x,2)
 
-#plot solution path
-plot(fit)
-}
+%#plot solution path
+%plot(fit)
+%}
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

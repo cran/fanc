@@ -1012,7 +1012,7 @@ SEXP LamdPsiupdate_initialver1_R(SEXP ex_Lambda, SEXP ex_diagPsi, SEXP ex_N, SEX
 
 
 
-SEXP fancmain(SEXP ex_Lambda_ini, SEXP ex_diagPsi_ini, SEXP ex_N, SEXP ex_tol1, SEXP ex_tol2, SEXP ex_maxcount1, SEXP ex_maxcount2, SEXP ex_maxcountinitial, SEXP ex_eta, SEXP ex_tolPsi, SEXP ex_rhomatrix, SEXP ex_gamma_vec, SEXP ex_X, SEXP ex_diagS, SEXP ex_S, SEXP ex_Lambdainitial_rand , SEXP ex_Npflag, SEXP ex_dimx0, SEXP ex_dimS){
+SEXP fancmain(SEXP ex_Lambda_ini, SEXP ex_diagPsi_ini, SEXP ex_N, SEXP ex_tol1, SEXP ex_tol2, SEXP ex_maxcount1, SEXP ex_maxcount2, SEXP ex_maxcountinitial, SEXP ex_eta, SEXP ex_tolPsi, SEXP ex_rhomatrix, SEXP ex_gamma_vec, SEXP ex_X, SEXP ex_diagS, SEXP ex_S, SEXP ex_Lambdainitial_rand , SEXP ex_Npflag, SEXP ex_dimx0, SEXP ex_dimS, SEXP ex_pmax_for_S){
 	SEXP Lambda_old;
 	SEXP Lambda_new;
 	SEXP Lambda_temp;
@@ -1336,7 +1336,9 @@ SEXP fancmain(SEXP ex_Lambda_ini, SEXP ex_diagPsi_ini, SEXP ex_N, SEXP ex_tol1, 
 				REAL(ans_CAIC)[steprho + STEPrho*stepgamma]= N * REAL(parameterupdate_new)[p*m+p+0] + (log(N)+1)*DF;
 				
 				GFI[0]=0.0;
-				if(INTEGER(ex_Npflag)[0]==1) GFI_C(p, m, INTEGER(ex_dimS)[0], REAL(Lambda_new), REAL(diagPsi_new), REAL(ex_S), GFI);
+//				if(INTEGER(ex_Npflag)[0]==1) GFI_C(p, m, INTEGER(ex_dimS)[0], REAL(Lambda_new), REAL(diagPsi_new), REAL(ex_S), GFI);
+				if(p<=INTEGER(ex_pmax_for_S)[0]) GFI_C(p, m, INTEGER(ex_dimS)[0], REAL(Lambda_new), REAL(diagPsi_new), REAL(ex_S), GFI);
+//				GFI_C(p, m, INTEGER(ex_dimS)[0], REAL(Lambda_new), REAL(diagPsi_new), REAL(ex_S), GFI);
 				REAL(ans_GFI)[steprho + STEPrho*stepgamma]= GFI[0];		
 			}
 			
@@ -1379,7 +1381,9 @@ SEXP fancmain(SEXP ex_Lambda_ini, SEXP ex_diagPsi_ini, SEXP ex_N, SEXP ex_tol1, 
 				
 
 				GFI[0]=0.0;
-				if(INTEGER(ex_Npflag)[0]==1) GFI_C(p, m, INTEGER(ex_dimS)[0], REAL(Lambda_new), REAL(diagPsi_new), REAL(ex_S), GFI);
+//				if(INTEGER(ex_Npflag)[0]==1) GFI_C(p, m, INTEGER(ex_dimS)[0], REAL(Lambda_new), REAL(diagPsi_new), REAL(ex_S), GFI);
+				if(p<=INTEGER(ex_pmax_for_S)[0]) GFI_C(p, m, INTEGER(ex_dimS)[0], REAL(Lambda_new), REAL(diagPsi_new), REAL(ex_S), GFI);
+//				GFI_C(p, m, INTEGER(ex_dimS)[0], REAL(Lambda_new), REAL(diagPsi_new), REAL(ex_S), GFI);
 				REAL(ans_GFI)[steprho + STEPrho*stepgamma]= GFI[0];		
 			}
 		}

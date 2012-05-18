@@ -84,11 +84,14 @@ If \code{"TRUE"}, each variable is standardized, otherwise it is left alone.
 %%  \item{comp2 }{Description of 'comp2'}
 %% ...
 %}
-%\references{
+\references{
 %% ~put references to the literature/web site here ~
 %Friedman, J. (2008).  Fast sparse regression and classification. \eqn{Technical report}, Standford University.\cr
-%Hirose, K., Tateishi, S. and Konishi, S.. (2011).  Efficient algorithm to select tuning parameters in sparse regression modeling with regularization. arXiv:1109.2411 (arXiv).
-%}
+Hirose, K. and Yamamoto, M. (2012). 
+\emph{Sparse estimation via nonconcave penalized likelihood in a factor analysis model},\cr
+  \url{http://arxiv.org/abs/1205.5868}\cr
+  \emph{arXiv:1205.5868 (arXiv).}
+}
 \author{
 Kei Hirose\cr
 \email{mail@keihirose.com}
@@ -111,11 +114,14 @@ x <- common.factors0 \%*\% t(loadings0) + unique.factors0
 #fit data
 fit <- fanc(x,2)
 
+#print candidates of gamma and rho
+print(fit)
+
 #output for fixed tuning parameters
 out(fit, rho=0.1, gamma=Inf)
 
-#plot solution path (the following function is executable)
-#plot(fit)
+#plot solution path
+plot(fit)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

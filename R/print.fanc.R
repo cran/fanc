@@ -38,7 +38,7 @@ print.fanc=function(x,digits = max(3, getOption("digits") - 3),num.result = 20,.
  	
  	cat("\nCall:", paste(deparse(x$call)), "\n")
     cat("\ngamma:\n"); print(gamma,digits=digits);
-    cat("\nrho:\n"); print(rho0,digits=digits);
+    cat("\nrho:\n"); print(rho,digits=digits);
     cat("\n")
  	invisible(x)      
     

@@ -1,4 +1,4 @@
-out <- function(x,rho=0, gamma=Inf, scores=FALSE){
+out <- function(x,rho, gamma, scores=FALSE){
 	if(class(x)!="fanc") stop('the class of object "x" must be "fanc"')
  	gamma_vec <- x$gamma
  	gamma_length <- length(gamma_vec)
@@ -23,12 +23,8 @@ out <- function(x,rho=0, gamma=Inf, scores=FALSE){
  	AIC <- x$AIC[rho_index,gamma_index]
  	BIC <- x$BIC[rho_index,gamma_index]
  	CAIC <- x$CAIC[rho_index,gamma_index]
- 	GFI <- x$GFI[rho_index,gamma_index];
- 	AGFI <- x$AGFI[rho_index,gamma_index];
  	criteria <- c(AIC,BIC,CAIC)
  	names(criteria) <- c("AIC","BIC","CAIC")
- 	GOF <- c(GFI,AGFI)
- 	names(GOF) <- c("GFI","AGFI")
  	
  	gamma0 <- gamma_vec[gamma_index]
  	rho0 <- rhovec[rho_index]
@@ -48,7 +44,12 @@ out <- function(x,rho=0, gamma=Inf, scores=FALSE){
  		# }else{
  			# ans <- list(loadings=Lambda, uniquenesses=diagPsi, df=df, criteria=criteria, rho=rho0, gamma=gamma0, GFI=GFI, AGFI=AGFI)
  		# }
-  	if(x$Npflag==1){
+	p0 <- dim(x$loadings)[1]
+  	if(p0<=500){
+	 	GFI <- x$GFI[rho_index,gamma_index];
+	 	AGFI <- x$AGFI[rho_index,gamma_index];
+	 	GOF <- c(GFI,AGFI)
+	 	names(GOF) <- c("GFI","AGFI")
 		if(scores==TRUE){
  			ans <- list(loadings=Lambda, uniquenesses=diagPsi, scores=ans_scores, df=df, criteria=criteria, goodness.of.fit=GOF, rho=rho0, gamma=gamma0)
  		}else{
