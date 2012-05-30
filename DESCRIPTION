@@ -1,8 +1,8 @@
 Package: fanc
 Type: Package
-Title: Penalized likelihood factor analysis via non-concave penalty
-Version: 1.0
-Date: 2012-05-18
+Title: Penalized likelihood factor analysis via nonconvex penalty
+Version: 1.1
+Date: 2012-05-30
 Author: Kei Hirose, Michio Yamamoto
 Maintainer: Kei Hirose <mail@keihirose.com>
 Suggests: RGtk2
@@ -17,6 +17,6 @@ Description: An R package "fanc" computes the penalized maximum
         value of regularization parameter.
 License: GPL (>= 2)
 URL: http://arxiv.org/abs/1205.5868, http://www.keihirose.com
-Packaged: 2012-05-29 00:13:11 UTC; hirosekei
+Packaged: 2012-05-30 22:41:16 UTC; hirosekei
 Repository: CRAN
-Date/Publication: 2012-05-29 06:37:46
+Date/Publication: 2012-05-31 08:46:11
