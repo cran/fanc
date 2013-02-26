@@ -46,10 +46,12 @@ Logical flag for outputting the factor scores. Defalut is FALSE.
 %}
 \value{
 \item{loadings}{factor loadings}
-\item{uniquenesses}{factor loadings}
+\item{uniquenesses}{unique variances}
+\item{Phi}{factor correlation}
 \item{scores}{factor scores}
 \item{df}{degrees of freedom (number of non-zero parameters for the lasso estimation)}
 \item{criteria}{values of AIC, BIC and CAIC}
+\item{goodness.of.fit}{values of GFI and AGFI}
 \item{rho}{a value of rho}
 \item{gamma}{a value of gamma}
 }

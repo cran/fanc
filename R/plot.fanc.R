@@ -204,9 +204,11 @@ cbExposeCanvas <- function (gtk.widget, data)
     ii <- i - 1
     for (j in 1:N.fac) {
       jj <- j - 1
-      cairoSetLineWidth (cr, abs(info.fanc$L[i, j, info.fanc$num.lambda, info.fanc$num.gamma] * 10))
+      #cairoSetLineWidth (cr, abs(info.fanc$L[i, j, info.fanc$num.lambda, info.fanc$num.gamma] * 10))
+      cairoSetLineWidth (cr, abs(info.fanc$L[[info.fanc$num.gamma]][[info.fanc$num.lambda]][i, j]  * 10))
 
-      if (info.fanc$L[i, j, info.fanc$num.lambda, info.fanc$num.gamma] < 0) {
+#      if (info.fanc$L[i, j, info.fanc$num.lambda, info.fanc$num.gamma] < 0) {
+      if (info.fanc$L[[info.fanc$num.gamma]][[info.fanc$num.lambda]][i, j] < 0) {
         cairoSetSourceRgb (cr, 255.0, 0.0, 0.0)
       }
       else {
@@ -587,7 +589,7 @@ MakeInterface <- function (gchar.title)
 ##plot.fanc
 ##gamma‚Ì’l‚ð•Ï‰»‚Å‚«‚é‚æ‚¤‚ÉC³
 plot.fanc <- function(x, Window.Height=500, ...){
-  if(dim(x$loadings)[1] > 100) stop("The number of variables must be less than or equal to 100 to plot the solution path.")
+  if(dim(x$loadings[[1]][[1]])[1] > 100) stop("The number of variables must be less than or equal to 100 to plot the solution path.")
   if(Window.Height<250 || Window.Height>2000) stop("'Window.Height' must be in [250,2000].")
   if(nchar(system.file(package="RGtk2")) == 0) stop("Package 'RGtk2' is required to plot the solution path.")
   require(RGtk2, quietly=TRUE)
@@ -622,10 +624,10 @@ plot.fanc <- function(x, Window.Height=500, ...){
 	info.fanc$AICs <<- AICs
 	info.fanc$BICs <<- BICs
 	info.fanc$CAICs <<- CAICs
-	info.fanc$N.var <<- dim(info.fanc$L)[1]
-	info.fanc$N.fac <<- dim(info.fanc$L)[2]
-	info.fanc$N.lambda <<- dim(info.fanc$L)[3]
-	info.fanc$N.gamma <<- dim(info.fanc$L)[4]
+	info.fanc$N.var <<- dim(info.fanc$L[[1]][[1]])[1]
+	info.fanc$N.fac <<- dim(info.fanc$L[[1]][[1]])[2]
+	info.fanc$N.lambda <<- length(info.fanc$L[[1]])
+	info.fanc$N.gamma <<- length(info.fanc$L)
 	info.fanc$Window.Width <<- max(((info.fanc$N.var+1) * info.fanc$Len.Rec + (info.fanc$N.var+2) * info.fanc$Len.Rec / 2), ((info.fanc$N.fac) * 1.5 * info.fanc$Rad.Ellipse),650)
 
 

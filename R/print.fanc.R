@@ -12,17 +12,12 @@ print.fanc=function(x,digits = max(3, getOption("digits") - 3),num.result = 20,.
 		if(num.result <= 0)	stop('"num.result" must be positive integer.')
 
 		
-		 LambdaAIC <- x$outAIC$loadings
-		 diagPsiAIC <- x$outAIC$uniquenesses
-		 rhoAIC <- x$outAIC$rho
-		 gammaAIC <- x$outAIC$gamma
 		 rho <- x$rho
 		 gamma <- x$gamma
 		 colnames(rho) <- sapply(gamma,function(x) sprintf('%3.3f',x))
 		 df <- x$df[,1]
 		 rho0 <- cbind(df,rho)
 		 colnames(rho0) <- c("df",colnames(rho))
-		 class(LambdaAIC) <- "loadings"
 
 
 #RESULT
@@ -39,6 +34,7 @@ print.fanc=function(x,digits = max(3, getOption("digits") - 3),num.result = 20,.
  	cat("\nCall:", paste(deparse(x$call)), "\n")
     cat("\ngamma:\n"); print(gamma,digits=digits);
     cat("\nrho:\n"); print(rho,digits=digits);
+    cat("\ncor.factor:", paste(x$cor.factor));
     cat("\n")
  	invisible(x)      
     
