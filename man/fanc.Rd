@@ -9,11 +9,8 @@ fanc (penalized maximum likelihood factor analysis via nonconvex penalties)
 This package computes the solution path of penalized maximum likelihood estimates via MC+ penalties.  
 }
 \usage{
-fanc(x, factors, covmat, n.obs, cor.factor=FALSE, length.rho=20, rho.max, length.gamma=5, 
-max.gamma=20, min.gamma=1.1, eta=0.0, initial.iter=10,  max.count.initial=500,  
-max.count.em=10000, max.count.cd=500, max.count.bfgs=500, all.random.start=FALSE, 
-Delta=0.001, min.uniquevar=0.005, tol.em=1e-5, tol.cd=1e-5, tol.bfgs=1e-5, scale.x = TRUE, 
-min.rho.zero=FALSE, zita=0.0, trace.em=FALSE)}
+fanc(x, factors, n.obs, cor.factor=FALSE, normalize = TRUE, rho.max, covmat, 
+control=list())}
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
@@ -22,83 +19,97 @@ A data matrix.
   \item{factors}{
 The number of factors.
 }
-  \item{covmat}{
-A covariance matrix, which is needed if the data matrix \code{"x"} is not available.
-}
   \item{n.obs}{
 The number of observations
 }
   \item{cor.factor}{
 An indicator of the factor correlation.  If \code{"TRUE"}, the factor correlation is considered.
 }
-  \item{length.rho}{
-Candidates of tuning parameters which is used for grid search of reparametrization of MC+.
+  \item{normalize}{
+If \code{"TRUE"}, each variable is normalized, otherwise it is left alone.
 }
   \item{rho.max}{
 Maximum value of rho.
 }
-  \item{length.gamma}{
+  \item{covmat}{
+A covariance matrix, which is needed if the data matrix \code{"x"} is not available.
+}
+ \item{control}{A list of control parameters. See \sQuote{Details}.}
+}
+
+\details{
+The \code{control} argument is a list that can supply any of the following components:
+\describe{
+	 \item{\code{length.rho}}{
+Candidates of tuning parameters which is used for grid search of reparametrization of MC+.
+}
+  \item{\code{length.gamma}}{
 A length of tuning parameter which controls sparsenesses.  For each \code{rho}, \code{gamma=Inf} yields soft threshold operator (i.e., lasso penalty) and \code{gamma=+1} produces hard threshold operator.
 }
-  \item{max.gamma}{
+  \item{\code{max.gamma}}{
 A maximum value of gamma (excludes \code{Inf}.).
 }
-  \item{min.gamma}{
+  \item{\code{min.gamma}}{
 A minimum value of gamma.
 }
-  \item{eta}{
+  \item{\code{eta}}{
 A tuning parameter used for preventing the occurrence of improper solutions.  \code{eta} must be non-negative.
 }
-  \item{max.count.em}{
+  \item{\code{ncand.initial}}{
+The number of candidates of initial values of factor loadings. 
+}
+  \item{\code{maxit.em}}{
 A maximum number of iterations for EM algortihm. 
 }
-  \item{max.count.cd}{
+  \item{\code{maxit.cd}}{
 A maximum number of iterations for coordinate descent algortihm. 
 }
-  \item{max.count.bfgs}{
+  \item{\code{maxit.bfgs}}{
 A maximum number of iterations for BFGS algorithm used in the update of factor correlation. 
 }
-  \item{max.count.initial}{
+  \item{\code{maxit.initial}}{
 A maximum number of iterations for choosing the initial values. 
 }
-  \item{all.random.start}{
-	If \code{"TRUE"}, the initial value of factor loadings is randomly chosen for each tuning parameter, which can be very slow.
+  \item{\code{start}}{
+	Type of start.  If \code{"cold"}, the initial value of factor loadings is randomly chosen for each tuning parameter, which can be slow.
 }
-  \item{Delta}{
+  \item{\code{Delta}}{
 A proportion of maximum value of rho to minimum value of rho, i.e., \code{rho.min}
 \code{=Delta*rho.max}. 
 }
-  \item{min.uniquevar}{
+  \item{\code{min.uniquevar}}{
 A minimum value of unique variances.
 }
-  \item{tol.em}{
+  \item{\code{tol.em}}{
 A positive scalar giving the tolerance at which the parameter in EM is considered close enough to zero to terminate the algorithm. 
 }
-  \item{tol.cd}{
+  \item{\code{tol.cd}}{
 A positive scalar giving the tolerance at which the factor loadings in coordinate descent is considered close enough to zero to terminate the algorithm. 
 }
-  \item{tol.bfgs}{
+  \item{\code{tol.bfgs}}{
 A positive scalar giving the tolerance at which the factor correlation in BFGS algorithm is considered close enough to zero to terminate the algorithm. 
 }
-  \item{scale.x}{
-If \code{"TRUE"}, each variable is standardized, otherwise it is left alone.
-}
-   \item{min.rho.zero}{
+   \item{\code{min.rhozero}}{
 	If \code{"TRUE"}, the minimum value of \code{"rho"} is zero.
 }
-  \item{initial.iter}{
-The number of candidates of initial values of factor loadings. 
-}
-   \item{zita}{
+   \item{\code{zita}}{
 	A value of hyper-parameter of factor correlation.
 }
-   \item{trace.em}{
-	If \code{"TRUE"}, tracing information on the progress for each tuning parameter is displayed.
+   \item{\code{progress}}{
+	If \code{"TRUE"}, the progress for each tuning parameter is displayed.
+}
+   \item{\code{openmp}}{
+	If \code{"TRUE"}, the parallel computation via OpenMP is excecuted.
+}
+   \item{\code{num.threads}}{
+	The number of threads of the openmp. Only used when \code{openmp} is \code{"TRUE"}, 
+}
+   \item{\code{gamma.ebic}}{
+	The value of gamma used in the extended BIC 
+}
+
 }
 }
-%\details{
-%  ~~ If necessary, more details than the description above ~~
-%}
 \value{
 \item{loadings}{factor loadings}
 \item{uniquenesses}{unique variances}

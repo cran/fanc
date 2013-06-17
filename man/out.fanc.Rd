@@ -3,6 +3,7 @@
 \alias{out.aic}
 \alias{out.bic}
 \alias{out.caic}
+\alias{out.ebic}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 output from a "fanc" object for fixed value of gamma.
@@ -16,6 +17,7 @@ out(x, rho, gamma, scores=FALSE)
 out.aic(x, gamma, scores=FALSE)
 out.bic(x, gamma, scores=FALSE)
 out.caic(x, gamma, scores=FALSE)
+out.ebic(x, gamma, scores=FALSE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
