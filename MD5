@@ -1,4 +1,4 @@
-b1c7d33cd06dcd7dcd6649c36b267427 *DESCRIPTION
+5e0d0608083e9065f2de45be422c1e88 *DESCRIPTION
 36c44239800a608a1a1e57a2fa4e4b4d *NAMESPACE
 bddc6d6cd9e39b8fdc3eb8eb86c520c2 *R/fanc.R
 6f3bf7208e0b81c1775be892b8c6c3b1 *R/out.fanc.R
@@ -8,5 +8,5 @@ f184260af7fd75ccff108afb263a0107 *R/plot.fanc.R
 44b18b79b8de9dcab2381c4b30e9d908 *man/out.fanc.Rd
 469447816ec716b443f16c3fc7e60753 *man/plot.fanc.Rd
 b4227b295db8b1d1466c95675f04bf9f *src/Makevars
-23e43910e26b8e1403e078e211f58589 *src/fancC_v1.12.c
+01db0cc295cd478e585abf11bee75b4e *src/fancC_v1.12.c
 bbd2c00deba29d5787f3a15911ee4c72 *src/profiling.h

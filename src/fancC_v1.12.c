@@ -9,7 +9,9 @@
 #include <R_ext/BLAS.h>
 #include <R_ext/Lapack.h>
 #include <R_ext/Applic.h>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 #include "profiling.h"
 
 //////////////////////////////////////////////////
@@ -345,13 +347,17 @@ void LambdaPsiPhiupdate_C(int p, int m, int N, int ex_Npflag, int ex_dimx0, int 
 	int count2=0;
     
     int n_threads;
+#ifdef _OPENMP
     if(ex_omp_num[0]==0){
         n_threads = omp_get_max_threads();
         if(n_threads<1) n_threads=1;
     }else{
         n_threads = ex_omp_num[0];
     }
-	
+#else
+    n_threads = 1;
+#endif
+    
 	double sum_Lsabun1=0.0;
 	double ALambdanewA_forPsi=0.0;
 	double BLambdanew_forPsi=0.0;
@@ -623,15 +629,13 @@ void LambdaPsiPhiupdate_C(int p, int m, int N, int ex_Npflag, int ex_dimx0, int 
         if(ex_flagpenalty[0]==1){
             /*Coordinate descent*/
             F77_CALL(dcopy)(&pm, Lambdanew, &one, Lambda1, &one);
-            //#ifdef _OPENMP
-            //		omp_set_num_threads(4);
-            //#endif
-            //prof_start(1,"coordinate descent");
             
             if(ex_omp[0]==1){
                 
-//#pragma omp parallel for
+                //#pragma omp parallel for
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(n_threads)
+#endif
                 for( j=0; j<p; j++){
                     double sum_Lsabun2=100.0;
                     int t2 = 0;
@@ -888,298 +892,8 @@ void LambdaPsiPhiupdate_C(int p, int m, int N, int ex_Npflag, int ex_dimx0, int 
             Lambdasabun[i] = Lambdanew[i] - Lambdaold[i];
         }
         sum_Lsabun1 = F77_CALL(dnrm2)(&pm, Lambdasabun, &one);
-        //                }
-        //end pragmaomp single
     }
-    //end EM
-    //        }
-    //end pragmaomp
     
-    //}
-    //end if
-    
-    /*
-    if(ex_omp[0]==0){
-        while( sum_Lsabun1 > ex_tol1[0]  && t1 < ex_maxcount1[0]){
-            //prof_start(0,"matrix computation");
-            t1=t1+1;
-            F77_CALL(dcopy)(&pm, Lambdanew, &one, Lambdaold, &one);
-            F77_CALL(dcopy)(&pm, Lambdanew, &one, Lambda1, &one);
-            F77_CALL(dcopy)(&pm, Lambdaold, &one, Psiinvhalf_Lambda, &one);
-            F77_CALL(dcopy)(&pm, Lambdaold, &one, Psiinv_Lambda, &one);
-            F77_CALL(dcopy)(&p, diagPsinew, &one, diagPsiold, &one);
-            F77_CALL(dcopy)(&mm, Phinew, &one, Phiold, &one);
-            for( i=0; i<p; i++){
-                diagPsiinv[i] = 1.0 / diagPsiold[i];
-                for( j=0; j<m; j++){
-                    Psiinvhalf_Lambda[i+j*p] = Psiinvhalf_Lambda[i+j*p] * sqrt(diagPsiinv[i]);
-                    Psiinv_Lambda[i+j*p] = Psiinv_Lambda[i+j*p] * diagPsiinv[i];
-                }
-            }
-            
-            //M <- t(Lambda) * Psi^(-1) * Lambda + diag(m)
-            if(corr_factor[0]==1 && m>1) {
-                F77_CALL(dcopy)(&mm, Phiold, &one, Phiinv, &one);
-                F77_CALL(dgetrf)(&m, &m, Phiinv, &m, ipiv_M,  &info);
-                F77_CALL(dgetri)(&m, Phiinv, &m, ipiv_M, work1, &mblocksize, &info);
-                F77_CALL(dcopy)(&mm, Phiinv, &one, M, &one);
-            }else{
-                F77_CALL(dcopy)(&mm, diagm, &one, M, &one);
-            }
-            
-            F77_CALL(dsyrk)(&UPPER, &TRANST, &m, &p, &alphaOne, Psiinvhalf_Lambda, &p, &betaOne, M, &m);
-            
-            for( i=0; i<m; i++){
-                for( j=0; j<m; j++){
-                    M[j+i*m] = M[i+j*m];
-                }
-            }
-            
-            //M^(-1)
-            F77_CALL(dcopy)(&mm, M, &one, Minv, &one);
-            F77_CALL(dgetrf)(&m, &m, Minv, &m, ipiv_M,  &info);
-            F77_CALL(dgetri)(&m, Minv, &m, ipiv_M, work1, &mblocksize, &info);
-            
-            //Psiinv_Lambda_Minv
-            F77_CALL(dgemm)(&TRANSN, &TRANSN, &p, &m, &m, &alphaOne, Psiinv_Lambda, &p,Minv, &m, &betaZero, Psiinv_Lambda_Minv, &p);
-            if(ex_Npflag==1){
-                //B
-                F77_CALL(dgemm)(&TRANST, &TRANSN, &m, &p, &p, &alphaOne, Psiinv_Lambda_Minv, &p, ex_S, &p, &betaZero, B, &m);
-                //A
-                F77_CALL(dcopy)(&mm, Minv, &one, A, &one);
-                F77_CALL(dgemm)(&TRANSN, &TRANSN, &m, &m, &p, &alphaOne, B, &m, Psiinv_Lambda_Minv, &p, &betaOne, A, &m);
-            }else{
-                //D
-                F77_CALL(dgemm)(&TRANST, &TRANST, &m, &N, &p, &alphaOne, Psiinv_Lambda_Minv, &p, ex_X, &N, &betaZero, D, &m);
-                //B
-                F77_CALL(dgemm)(&TRANSN, &TRANSN, &m, &p, &N, &alphaOne, D, &m, ex_X, &N, &betaZero, B, &m);
-                //A
-                F77_CALL(dcopy)(&mm, Minv, &one, A, &one);
-                F77_CALL(dgemm)(&TRANSN, &TRANST, &m, &m, &N, &alphaOne, D, &m, D, &m, &betaOne, A, &m);
-            }
-            //prof_stop(0);
-            
-            
-            if(ex_flagpenalty[0]==0){
-                //No Penalty
-                //A^(-1)
-                F77_CALL(dcopy)(&mm, A, &one, Ainv, &one);
-                F77_CALL(dgetrf)(&m, &m, Ainv, &m, ipiv_A,  &info);
-                F77_CALL(dgetri)(&m, Ainv, &m, ipiv_A, work1, &mblocksize, &info);
-                //Lambdanew <- B^TA^(-1)
-                F77_CALL(dgemm)(&TRANST, &TRANSN, &p, &m, &m, &alphaOne, B, &m, Ainv, &m, &betaZero, Lambdanew, &p);
-                //fix lambda which is assumed to be fixed
-                for( i=0; i<pm; i++){
-                    if(ex_fixindex[i]==1) Lambdanew[i] = ex_Lambda[i];
-                }
-            }
-            
-            
-            if(ex_flagpenalty[0]==1){
-                //Coordinate descent//
-                F77_CALL(dcopy)(&pm, Lambdanew, &one, Lambda1, &one);
-                //#ifdef _OPENMP
-                //		omp_set_num_threads(4);
-                //#endif
-                
-                //prof_start(1,"coordinate descent");
-                
-                for( j=0; j<p; j++){
-                    double sum_Lsabun2=100.0;
-                    int t2 = 0;
-                    double ALambdanew=0.0;
-                    int l_omp;
-                    int l0_omp;
-                    double weight_cd=1.0;
-                    double theta_tilde=0.0;
-                    double rho_adj;
-                    double gamma_adj;
-                    
-                    while(sum_Lsabun2 > ex_tol2[0] && t2 < ex_maxcount2[0]){
-                        t2=t2+1;
-                        for( l_omp=0; l_omp<m; l_omp++){
-                            ALambdanew=0.0;
-                            for(l0_omp=0; l0_omp<m; l0_omp++){
-                                if(l0_omp != l_omp){
-                                    ALambdanew = ALambdanew + A[l_omp*m+l0_omp] * Lambdanew[p*l0_omp + j];
-                                }
-                            }
-                            if(ex_fixindex[j+p*l_omp]==0){
-                                theta_tilde = (B[j*m+l_omp] - ALambdanew ) / A[l_omp+l_omp*m];
-                                weight_cd = diagPsiold[j] / A[l_omp+l_omp*m];
-                                rho_adj = ex_rho[0]*weight_cd;
-                                gamma_adj = ex_gamma[0]/weight_cd;
-                                Lambdanew[j+p*l_omp] = S_func_MC_C(theta_tilde, rho_adj, gamma_adj );
-                                //Lambdanew[j+p*l_omp] = S_func_MC_C(1.0 / diagPsiold[j] * ( B[j*m+l_omp] - ALambdanew ), ex_rho[0] , ex_gamma[0] )  /  (  1.0 / diagPsiold[j] * A[l_omp+l_omp*m] );
-                            }
-                        }
-                        
-                        
-                        sum_Lsabun2=0.0;
-                        for( l_omp=0; l_omp<m; l_omp++){
-                            sum_Lsabun2 = sum_Lsabun2+ (Lambdanew[j+p*l_omp] - Lambda1[j+p*l_omp]) * (Lambdanew[j+p*l_omp] - Lambda1[j+p*l_omp]);
-                        }
-                        sum_Lsabun2=sqrt(sum_Lsabun2);
-                        
-                        
-                        for( l_omp=0; l_omp<m; l_omp++){
-                            Lambda1[j+p*l_omp] = Lambdanew[j+p*l_omp];
-                        }
-                        
-                    }
-                    
-                    if(t2==ex_maxcount2[0]) ex_failflag[1]=1;
-                }
-            }
-            //prof_stop(1);
-            
-            
-            
-            
-            
-            
-            //update Psi//
-            for( i=0; i<p; i++){
-                ALambdanewA_forPsi=0.0;
-                BLambdanew_forPsi=0.0;
-                for(l=0; l<m; l++){
-                    BLambdanew_forPsi=BLambdanew_forPsi+ B[i*m+l] * Lambdanew[p*l + i];
-                    for(l0=0; l0<m; l0++){
-                        ALambdanewA_forPsi = ALambdanewA_forPsi + A[l*m+l0] * Lambdanew[p*l0 + i] *  Lambdanew[p*l + i];
-                    }
-                }
-                diagPsinew[i] = ex_diagS[i] - 2 * BLambdanew_forPsi + ALambdanewA_forPsi + ex_diagS[i]*ex_eta[0];
-                if(diagPsinew[i] < ex_tolPsi[0]) diagPsinew[i] = ex_tolPsi[0];
-            }
-            
-            
-            
-            //update Pji//
-            
-            //compute m0
-            m0=0;
-            for(i=0;i<m;i++){
-                m0_vec[i]=0;
-            }
-            for(j=0;j<m;j++){
-                sumabsm0=0.0;
-                for(i=0;i<p;i++){
-                    sumabsm0 = sumabsm0 + fabs(Lambdanew[i+j*p]);
-                }
-                if(sumabsm0 > ex_tol1[0]){
-                    m0=m0+1;
-                    m0_vec[j]=1;
-                }
-            }
-            
-            if(m0<m){
-                //post-processing: The zero-columns move to right side
-                F77_CALL(dcopy)(&pm, Lambdanew, &one, Lambda0, &one);
-                F77_CALL(dcopy)(&mm, A, &one, A0, &one);
-                for(i=0;i<p*m;i++){
-                    Lambdanew[i]=0.0;
-                }
-                count2=0;
-                for(i=0;i<m;i++){
-                    if(m0_vec[i]==1){
-                        for(j=0;j<p;j++){
-                            Lambdanew[j+count2*p]=Lambda0[j+i*p];
-                        }
-                        count2=count2+1;
-                    }
-                }
-            }
-            
-            
-            
-            
-            flag_phi=0;
-            for(i=0;i<m0;i++){
-                if(m0_vec[i]!=1){
-                    flag_phi=1;
-                }
-            }
-            
-            //update Phi if flag_phi=1//
-            
-            //initialize Phi
-            if(m0>1 && corr_factor[0]==1){
-                if(flag_phi==1){
-                    for( i=0; i<m*m; i++){
-                        Phiold[i] = 0.0;
-                    }
-                    for( i=0; i<m; i++){
-                        Phiold[i+i*m] = 1.0;
-                    }
-                }
-            }
-            
-            
-            for(i=0; i<m; i++){
-                for(j=0; j<m; j++){
-                    Phinew[i*m+j]=0.0;
-                }
-            }
-            for(i=0; i<m; i++){
-                Phinew[i*m+i]=1.0;
-            }
-            
-            //initialize Atemp
-            if(m0>1 && corr_factor[0]==1){
-                for( i=0; i<mm; i++){
-                    Atemp[i]=0.0;
-                }
-                count2=0;
-                for(i=0;i<m;i++){
-                    if(m0_vec[i]==1){
-                        for(j=0;j<m;j++){
-                            if(m0_vec[j]==1){
-                                Atemp[count2]=A[i*m+j];
-                                count2=count2+1;
-                            }
-                        }
-                    }
-                }
-                
-                
-                
-                for( i=0; i<mm; i++){
-                    Phitemp[i]=0.0;
-                }
-                for(i=0; i<m0; i++){
-                    for(j=0; j<m0; j++){
-                        Phitemp[i*m0+j]=Phiold[i*m+j];
-                    }
-                }
-                
-                //update phi using BFGS
-                //prof_start(2,"BFGS");
-                vmmin_Phi(m0, Phitemp, Atemp, ex_zita[0],ex_maxcount_phi[0], ex_tol3[0], phi_failflag);
-                //prof_stop(2);
-                if(phi_failflag[0]==1) ex_failflag[2] = phi_failflag[0];
-                
-                
-                
-                for(i=0; i<m0; i++){
-                    for(j=0; j<m0; j++){
-                        Phinew[i*m+j]=Phitemp[i*m0+j];
-                    }
-                }
-                
-            }
-            
-            //calculate the distance between Lambdanew and Lambdaold
-            for( i=0; i<p*m; i++){
-                Lambdasabun[i] = Lambdanew[i] - Lambdaold[i];
-            }
-            sum_Lsabun1 = F77_CALL(dnrm2)(&pm, Lambdasabun, &one);
-        }
-        //end EM
-    }
-    //end if
-
-
-*/
     
     R_CheckUserInterrupt();
     
