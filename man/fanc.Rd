@@ -19,11 +19,8 @@ A data matrix.
   \item{factors}{
 The number of factors.
 }
-  \item{n.obs}{
-The number of observations
-}
   \item{cor.factor}{
-An indicator of the factor correlation.  If \code{"TRUE"}, the factor correlation is considered.
+An indicator of the factor correlation.  If \code{"TRUE"}, the factor correlation is considered.  Default is \code{"FALSE"}.
 }
   \item{normalize}{
 If \code{"TRUE"}, each variable is normalized, otherwise it is left alone.
@@ -33,6 +30,9 @@ Maximum value of rho.
 }
   \item{covmat}{
 A covariance matrix, which is needed if the data matrix \code{"x"} is not available.
+}
+  \item{n.obs}{
+The number of observations, which is needed to calculate the model selection criteria and goodness-of-fit indices when the data matrix \code{"x"} is not available.
 }
  \item{control}{A list of control parameters. See \sQuote{Details}.}
 }
@@ -132,10 +132,9 @@ A positive scalar giving the tolerance at which the factor correlation in BFGS a
 \references{
 %% ~put references to the literature/web site here ~
 %Friedman, J. (2008).  Fast sparse regression and classification. \eqn{Technical report}, Standford University.\cr
-Hirose, K. and Yamamoto, M. (2012). 
+Hirose, K. and Yamamoto, M. (2014). 
 \emph{Sparse estimation via nonconcave penalized likelihood in a factor analysis model},\cr
-  \url{http://arxiv.org/abs/1205.5868}\cr
-  \emph{arXiv:1205.5868 (arXiv).}
+  \emph{Statistics and Computing, in press}
 }
 \author{
 Kei Hirose\cr
@@ -166,6 +165,9 @@ print(fit)
 
 #output for fixed tuning parameters
 out(fit, rho=0.1, gamma=Inf)
+
+#select a model via model selection criterion
+select(fit, criterion="BIC", gamma=Inf)
 
 #plot solution path
 #plot(fit)

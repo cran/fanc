@@ -20,7 +20,7 @@ plot the solution path from a "fanc" object.
 This functions plots the solution paths from a "fanc" object for fixed value of gamma.  
 }
 \usage{
-\method{plot}{fanc}(x, Window.Height=500, ...)
+\method{plot}{fanc}(x, Window.Height=500, type=NULL, df.method="reparametrization", ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -32,10 +32,13 @@ Fitted \code{"fanc"} model object.
 %%     ~~Describe \code{object} here~~
 A window height. The default is 500.
 }
-%%  \item{type}{
+  \item{type}{
 %%     ~~Describe \code{tuning} here~~
-%%The type of \code{"solution"} depicts the solution path along with the tuning parameter selected by model selection criterion of \code{criteion}. The type of \code{"df"} shows the degrees of freedom.
-%%}
+Two plot types are supported.  If \code{"path"}, the path diagram is depicted.  If \code{"heatmap"}, the heatmap is depicted.
+}
+  \item{df.method}{
+Two types of degrees of freedom are supported.  If \code{"reparametrization"}, the degrees of freedom of the MC+ are reparametrized based on the degrees of freedom of the lasso.  If \code{"active"}, the degrees of freedom of are the number of nonzero parameters.
+}
 %  \item{gamma}{
 %%     ~~Describe \code{tuning} here~~
 %The value of gamma.
@@ -51,10 +54,9 @@ NULL
 \references{
 %% ~put references to the literature/web site here ~
 %Friedman, J. (2008).  Fast sparse regression and classification. \eqn{Technical report}, Standford University.\cr
-Hirose, K. and Yamamoto, M. (2012). 
+Hirose, K. and Yamamoto, M. (2014). 
 \emph{Sparse estimation via nonconcave penalized likelihood in a factor analysis model},\cr
-  \url{http://arxiv.org/abs/1205.5868}\cr
-  \emph{arXiv:1205.5868 (arXiv).}
+  \emph{Statistics and Computing, in press}
 }
 \author{
 Kei Hirose\cr

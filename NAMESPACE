@@ -1,14 +1,12 @@
 useDynLib("fanc")
+import(Matrix)
 
 
 export(fanc)
 export(plot.fanc)
 export(print.fanc)
+export(select)
 export(out)
-export(out.aic)
-export(out.bic)
-export(out.caic)
-export(out.ebic)
 
 S3method("plot","fanc")
 S3method("print","fanc")
