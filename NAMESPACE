@@ -8,5 +8,9 @@ export(print.fanc)
 export(select)
 export(out)
 
+importFrom("grDevices", "rgb")
+importFrom("stats", "cov", "var")
+importFrom("utils", "install.packages")
+
 S3method("plot","fanc")
 S3method("print","fanc")

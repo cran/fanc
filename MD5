@@ -1,6 +1,6 @@
-50b2d05586b3197d9f279dd089a0cca6 *DESCRIPTION
-d3f3a9666e125424833e54dbedcfe2b0 *NAMESPACE
-f294f0c04b7c09d993e69c526ea61f28 *R/fanc.R
+7340e95602b5181100a7a5df12a92a03 *DESCRIPTION
+5dfcc4f7b904b8532d5ef0b591821a39 *NAMESPACE
+5fbd2ff0b3d87094f4df713f397441cb *R/fanc.R
 03eebd18e2eff915dabf10141398456b *R/out.fanc.R
 888d5d5911e20c605f808fb018fb33e7 *R/plot.fanc.R
 9ffc760177def9421636f505957e2d8e *R/print.fanc.R
@@ -12,6 +12,6 @@ cc3d7750eb3293582d81e2bd460a811a *man/plot.fanc.Rd
 b4227b295db8b1d1466c95675f04bf9f *src/Makevars
 089d508b82b7dd37ab1594f095df18b1 *src/ezprof.c
 ebc9b680d9836413a7a41e63b079ff56 *src/ezprof.h
-3bb9a3b44aa03defc05d131e7bff180e *src/fanc.c
+93834fd8c8fbd26005470907515fce8d *src/fanc.c
 dcbaca1b53055585a75dfe25d6b81262 *src/zeroin.c
 3c2aff4b9dcbf713644f7be673e72ccc *src/zeroin.h

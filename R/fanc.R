@@ -83,6 +83,9 @@ fanc <- function(
     stop('"progress" in control must be logical.')
   if (!is.logical(con$openmp))
     stop('"openmp" in control must be logical.')
+  if (con$openmp && con$num.threads == 0) {
+    con$num.threads <- parallel::detectCores()
+  }
 
   con$tol.em <- as.double(con$tol.em)
   con$tol.cd <- as.double(con$tol.cd)
