@@ -43,657 +43,23 @@
 ##modified the cancidates of lambda as gamma varies
 plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="reparametrization", ...){
 
-  ##path and heatmap is chose according to the number of variables
-  if (identical(type, "path") || (is.null(type) && dim(x$loadings[[1]][[1]])[1] < 50)) {
-
-    if(dim(x$loadings[[1]][[1]])[1] > 100) stop("The number of variables must be less than or equal to 100 to plot the solution path.")
-    if(Window.Height<250 || Window.Height>2000) stop("'Window.Height' must be in [250,2000].")
-    if(nchar(system.file(package="RGtk2")) == 0) stop("Package 'RGtk2' is required to plot the solution path.")
-    requireNamespace("RGtk2", quietly=TRUE)
-    ##if(sum(ls()=="info.fanc")!=0) stop('Object "info.fanc" must be deleted')
-
-    ##extract the factor pattern
-    L <- x$loadings
-    lambdas <- x$rho
-    gammas <- x$gamma
-    if(df.method=="reparametrization"){
-        GFIs <- x$GFI
-        AGFIs <- x$AGFI
-        AICs <- x$AIC
-        BICs <- x$BIC
-        CAICs <- x$CAIC
-    }
-    if(df.method=="active"){
-        GFIs <- x$GFI
-        AGFIs <- x$AGFI_dfnonzero
-        AICs <- x$AIC_dfnonzero
-        BICs <- x$BIC_dfnonzero
-        CAICs <- x$CAIC_dfnonzero
-    }
-    info.fanc <- list("Rad.Ellipse"=50, "Len.Rec"=50, "Window.Height"=Window.Height,
-                      "N.var"=NULL, "N.fac"=NULL, "N.lambda"=NULL,
-                      "L"=NULL, "lambdas"=NULL, "num.lambda"=1, "num.gamma"=1,"num.GFI"=1)
-                                        #if(x$factors==1) L <- array(L,dim=c(nrow(x$rho),1,ncol(x$rho)))
-                                        #assign("info,fanc", info.fanc, envir=infofanc)
-    info.fanc$lambda.current <- lambdas[1,1]
-    info.fanc$gamma.current <- gammas[1]
-    info.fanc$GFI.current <- GFIs[1]
-    info.fanc$AGFI.current <- AGFIs[1]
-    info.fanc$AIC.current <- AICs[1]
-    info.fanc$BIC.current <- BICs[1]
-    info.fanc$CAIC.current <- CAICs[1]
-    info.fanc$L <- L
-    info.fanc$lambdas <- lambdas
-    info.fanc$gammas <- gammas
-    info.fanc$num.lambda <- 1
-    info.fanc$num.gamma <- 1
-    info.fanc$GFIs <- GFIs
-    info.fanc$AGFIs <- AGFIs
-    info.fanc$AICs <- AICs
-    info.fanc$BICs <- BICs
-    info.fanc$CAICs <- CAICs
-    info.fanc$N.var <- dim(info.fanc$L[[1]][[1]])[1]
-    info.fanc$N.fac <- dim(info.fanc$L[[1]][[1]])[2]
-    info.fanc$N.lambda <- length(info.fanc$L[[1]])
-    info.fanc$N.gamma <- length(info.fanc$L)
-    info.fanc$Window.Width <- max(((info.fanc$N.var+1) * info.fanc$Len.Rec + (info.fanc$N.var+2) * info.fanc$Len.Rec / 2), ((info.fanc$N.fac) * 1.5 * info.fanc$Rad.Ellipse),650)
-
-    cbExposeCanvas <- function (gtk.widget, data)
-      {
-        N.var <- info.fanc$N.var
-        N.fac <- info.fanc$N.fac
-        Window.Width <- info.fanc$Window.Width
-        Window.Height <- info.fanc$Window.Height
-        Rad.Ellipse <- info.fanc$Rad.Ellipse
-        Len.Rec <- info.fanc$Len.Rec
-
-        drawable <- gtk.widget$window
-        HN.var <- N.var / 2
-        HN.fac <- N.fac / 2
-
-        cr <- RGtk2::gdkCairoCreate (drawable)
-        cr.t <- RGtk2::gdkCairoCreate (drawable)
-        Mat <- RGtk2::cairoMatrixInit (0, 0, 0, 0, 0, 0)$matrix
-
-        ##-------------------
-        ##   depict the Ellipse of factor
-        ##-------------------
-        Rem.N.fac <- N.fac %% 2
-        RGtk2::cairoTranslate (cr, Window.Width / 2, Rad.Ellipse + 20) ##movement of origin
-        RGtk2::cairoTranslate (cr.t, Window.Width / 2, Rad.Ellipse + 20) ##movement of origin
-
-        RGtk2::cairoSetLineWidth (cr, 2.5)
-
-        RGtk2::cairoScale (cr, 1.0, 0.5) ##scale of ellipse
-
-        if (Rem.N.fac == 0) { ##for odd number of factors
-          for (i in 1:HN.fac) {
-            ii <- i - 1
-
-            ##depict the ellipse
-            RGtk2::cairoArc (cr, -Rad.Ellipse * 5 / 4 - ii * 2 * Rad.Ellipse * 5 / 4, 0,
-                      Rad.Ellipse, 0.0, 2.0 * pi)
-            RGtk2::cairoStroke (cr)
-            RGtk2::cairoArc (cr,  Rad.Ellipse * 5 / 4 + ii * 2 * Rad.Ellipse * 5 / 4, 0,
-                      Rad.Ellipse, 0.0, 2.0 * pi)
-            RGtk2::cairoStroke (cr)
-
-            RGtk2::cairoSetFontSize (cr.t, 20)
-
-            ##depict the label
-            text <- sprintf ("f%d", HN.fac - ii)
-            RGtk2::cairoMoveTo (cr.t, -Rad.Ellipse * 5 / 4 - Rad.Ellipse / 4 - ii * 2 * Rad.Ellipse * 5 / 4, 5)
-            RGtk2::cairoShowText (cr.t, text)
-
-            text <- sprintf ("f%d", HN.fac + 1 + ii)
-            RGtk2::cairoMoveTo (cr.t,  Rad.Ellipse * 5 / 4 - Rad.Ellipse / 4 + ii * 2 * Rad.Ellipse * 5 / 4, 5)
-            RGtk2::cairoShowText (cr.t, text)
-          }
-        }
-        else if (Rem.N.fac != 0) { ##for even number of factors
-          RGtk2::cairoArc (cr, 0.0, 0.0, Rad.Ellipse, 0.0, 2.0 * pi)
-          RGtk2::cairoStroke (cr)
-          RGtk2::cairoSetFontSize (cr.t, 20)
-          text <- sprintf ("f%d", floor(HN.fac) + 1)
-          RGtk2::cairoMoveTo (cr.t, 0 - Rad.Ellipse / 4, 5)
-          RGtk2::cairoShowText (cr.t, text)
-
-          if (floor(HN.fac) != 0) {
-            for (i in 1:floor(HN.fac)) {
-              ii <- i - 1
-
-            ##depict the ellipse
-              RGtk2::cairoArc (cr, -Rad.Ellipse * 10 / 4 - ii * 2 * Rad.Ellipse * 5 / 4, 0,
-                        Rad.Ellipse, 0.0, 2.0 * pi)
-              RGtk2::cairoStroke (cr)
-              RGtk2::cairoArc (cr,  Rad.Ellipse * 10 / 4 + ii * 2 * Rad.Ellipse * 5 / 4, 0,
-                        Rad.Ellipse, 0.0, 2.0 * pi)
-              RGtk2::cairoStroke (cr)
-
-              RGtk2::cairoSetFontSize (cr.t, 20)
-
-            ##depict the label
-              text <- sprintf ("f%d", floor(HN.fac) - ii)
-              RGtk2::cairoMoveTo (cr.t, -Rad.Ellipse * 10 / 4 - Rad.Ellipse / 4 - ii * 2 * Rad.Ellipse * 5 / 4, 5)
-              RGtk2::cairoShowText (cr.t, text)
-
-              text <- sprintf ("f%d", floor(HN.fac) + ii + 2)
-              RGtk2::cairoMoveTo (cr.t,  Rad.Ellipse * 10 / 4 - Rad.Ellipse / 4 + ii * 2 * Rad.Ellipse * 5 / 4, 5)
-              RGtk2::cairoShowText (cr.t, text)
-            }
-          }
-        } ##finish the depict of ellipse
-
-        ##change back to the coordinates
-        RGtk2::cairoGetMatrix (cr, Mat)
-        RGtk2::cairoMatrixInvert (Mat)
-        RGtk2::cairoTransform (cr, Mat)
-        RGtk2::cairoGetMatrix (cr.t, Mat)
-        RGtk2::cairoMatrixInvert (Mat)
-        RGtk2::cairoTransform (cr.t, Mat)
-
-
-        ##-------------------
-        ##  depict rectangular of variables 
-        ##-------------------
-        ##Change the pattern when the number of variables is even (odd)
-        Rem.N.var <- N.var %% 2
-        RGtk2::cairoTranslate (  cr, Window.Width / 2, Window.Height - Len.Rec * 5 / 2)
-        RGtk2::cairoTranslate (cr.t, Window.Width / 2, Window.Height - Len.Rec * 5 / 2)
-
-        RGtk2::cairoSetLineWidth (cr, 2.5)
-
-        if (Rem.N.var == 0) {##for even number of variables
-          for (i in 1:HN.var) {
-            ii <- i - 1
-            RGtk2::cairoRectangle (cr, -Len.Rec * 5 / 4 - ii * Len.Rec * 3 / 2, 0, Len.Rec, Len.Rec)
-            RGtk2::cairoStroke (cr)
-            RGtk2::cairoRectangle (cr, Len.Rec / 4 + ii * Len.Rec * 3 / 2, 0, Len.Rec, Len.Rec)
-            RGtk2::cairoStroke (cr)
-
-            RGtk2::cairoSetFontSize (cr.t, 20)
-
-            text <- sprintf ("x%d", floor(HN.var) - ii)
-            RGtk2::cairoMoveTo (cr.t, -Len.Rec * 5 / 4 - ii * Len.Rec * 3 / 2 + Len.Rec / 4, Len.Rec * 2 / 3)
-            RGtk2::cairoShowText (cr.t, text)
-
-            text <- sprintf ("x%d", floor(HN.var) + 1 + ii)
-            RGtk2::cairoMoveTo (cr.t, Len.Rec / 4 + ii * Len.Rec * 3 / 2 + Len.Rec / 4, Len.Rec * 2 / 3)
-            RGtk2::cairoShowText (cr.t, text)
-          }
-        }
-        else if (Rem.N.var != 0) { ##for odd number of variables
-          RGtk2::cairoRectangle (cr, -Len.Rec / 2, 0, Len.Rec, Len.Rec)
-          RGtk2::cairoStroke (cr)
-          RGtk2::cairoSetFontSize (cr.t, 20)
-          text <- sprintf("x%d", floor(HN.var) + 1)
-          RGtk2::cairoMoveTo (cr.t, 0 - Len.Rec / 2 + Len.Rec / 3, Len.Rec * 2 / 3)
-          RGtk2::cairoShowText (cr.t, text)
-
-          for (i in 1:HN.var) {
-            ii <- i - 1
-            RGtk2::cairoRectangle (cr, -Len.Rec * 2 - ii * Len.Rec * 3 / 2, 0, Len.Rec, Len.Rec)
-            RGtk2::cairoStroke (cr)
-            RGtk2::cairoRectangle (cr, Len.Rec      + ii * Len.Rec * 3 / 2, 0, Len.Rec, Len.Rec)
-            RGtk2::cairoStroke (cr)
-
-            RGtk2::cairoSetFontSize (cr.t, 20)
-
-            text <- sprintf ("x%d", floor(HN.var) - ii)
-            RGtk2::cairoMoveTo (cr.t, -Len.Rec * 2 - ii * Len.Rec * 3 / 2 + Len.Rec / 3 - 0.5, Len.Rec * 2 / 3)
-            RGtk2::cairoShowText (cr.t, text)
-
-            text <- sprintf ("x%d", floor(HN.var) + 2 + ii)
-            RGtk2::cairoMoveTo (cr.t, Len.Rec      + ii * Len.Rec * 3 / 2 + Len.Rec / 3 - 0.5, Len.Rec * 2 / 3)
-            RGtk2::cairoShowText (cr.t, text)
-          }
-        }
-
-        ##change back to the coordinates
-        RGtk2::cairoGetMatrix (cr, Mat)
-        RGtk2::cairoMatrixInvert (Mat)
-        RGtk2::cairoTransform (cr, Mat)
-        RGtk2::cairoGetMatrix (cr.t, Mat)
-        RGtk2::cairoMatrixInvert (Mat)
-        RGtk2::cairoTransform (cr.t, Mat)
-
-
-
-        ##---------------------------
-        ##  depict the line between variables and factors
-        ##---------------------------
-        if (Rem.N.fac == 0) { ##for even number of factors
-          cr.Fac.X <- -Rad.Ellipse * 5 / 4 - (HN.fac - 1) * 2 * Rad.Ellipse * 5 / 4 + Window.Width / 2
-          cr.Fac.Y <- Rad.Ellipse + 20 + Rad.Ellipse / 2
-        }
-        else if (Rem.N.fac != 0) { ##for odd number of factors
-          cr.Fac.X <- -Rad.Ellipse * 10 / 4 - (floor(HN.fac) - 1) * 2 * Rad.Ellipse * 5 / 4 + Window.Width / 2
-          cr.Fac.Y <- Rad.Ellipse + 20 + Rad.Ellipse / 2
-        }
-
-        if (Rem.N.var == 0) { ##for even number of variables
-          cr.Var.X <- -Len.Rec * 5 / 4 - (HN.var - 1) * Len.Rec * 3 / 2 + Window.Width / 2 + Len.Rec / 2
-          cr.Var.Y <- Window.Height - Len.Rec * 5 / 2
-        }
-        else if (Rem.N.var != 0) { ##for odd number of variables
-          cr.Var.X <- -Len.Rec * 2 - (floor(HN.var) - 1) * Len.Rec * 3 / 2 + Window.Width / 2 + Len.Rec / 2
-          cr.Var.Y <- Window.Height - Len.Rec * 5 / 2
-        }
-
-        ##depict all of the paths individually
-        RGtk2::cairoSetLineJoin (cr, 'CAIRO_LINE_JOIN_BEVEL')
-        ##  RGtk2::cairoSetLineJoin (cr, 'CAIRO_LINE_JOIN_MITER')
-        for (i in 1:N.var) {
-          ii <- i - 1
-          for (j in 1:N.fac) {
-            jj <- j - 1
-            ## RGtk2::cairoSetLineWidth (cr, abs(info.fanc$L[i, j, info.fanc$num.lambda, info.fanc$num.gamma] * 10))
-            RGtk2::cairoSetLineWidth (cr, abs(info.fanc$L[[info.fanc$num.gamma]][[info.fanc$num.lambda]][i, j]  * 10))
-
-            ## if (info.fanc$L[i, j, info.fanc$num.lambda, info.fanc$num.gamma] < 0) {
-            if (info.fanc$L[[info.fanc$num.gamma]][[info.fanc$num.lambda]][i, j] < 0) {
-              RGtk2::cairoSetSourceRgb (cr, 255.0, 0.0, 0.0)
-            }
-            else {
-              RGtk2::cairoSetSourceRgb (cr, 0.0, 0.0, 0.0)
-            }
-            RGtk2::cairoMoveTo (cr, cr.Fac.X + jj * 2 * Rad.Ellipse * 5 / 4, cr.Fac.Y)
-            RGtk2::cairoLineTo (cr, cr.Var.X + ii * Len.Rec * 3 / 2, cr.Var.Y)
-            RGtk2::cairoStroke (cr)
-          }
-        }
-      }
-
-
-
-    ##callback function for expose-event signal of GtkWidget label
-    ##-----for 'rho'-----
-    cbExposeLabelLambda <- function (gtk.widget, data)
-      {
-        drawable <- gtk.widget$window
-
-        cr <- RGtk2::gdkCairoCreate (drawable)
-
-        text <- sprintf ("rho : %f", info.fanc$lambda.current)
-        RGtk2::cairoSetFontSize (cr, 15)
-        RGtk2::cairoMoveTo (cr, 0, 30)
-        RGtk2::cairoShowText (cr, text)
-      }
-
-    ##-----for 'GFI'-----
-    cbExposeLabelGFI <- function (gtk.widget, data)
-      {
-        drawable <- gtk.widget$window
-
-        cr <- RGtk2::gdkCairoCreate (drawable)
-
-        text <- paste("GFI: ", signif(info.fanc$GFI.current, digits=6), sep="")
-        RGtk2::cairoSetFontSize (cr, 15)
-        RGtk2::cairoMoveTo (cr, 0, 30)
-        RGtk2::cairoShowText (cr, text)
-      }
-
-    ##-----for 'AGFI'-----
-    cbExposeLabelAGFI <- function (gtk.widget, data)
-      {
-        drawable <- gtk.widget$window
-
-        cr <- RGtk2::gdkCairoCreate (drawable)
-
-        text <- paste("AGFI: ", signif(info.fanc$AGFI.current, digits=6), sep="")
-        RGtk2::cairoSetFontSize (cr, 15)
-        RGtk2::cairoMoveTo (cr, 0, 30)
-        RGtk2::cairoShowText (cr, text)
-      }
-
-    ##-----for 'AIC'-----
-    cbExposeLabelAIC <- function (gtk.widget, data)
-      {
-        drawable <- gtk.widget$window
-
-        cr <- RGtk2::gdkCairoCreate (drawable)
-
-        text <- paste("AIC: ", signif(info.fanc$AIC.current, digits=6), sep="")
-        RGtk2::cairoSetFontSize (cr, 15)
-        RGtk2::cairoMoveTo (cr, 0, 30)
-        RGtk2::cairoShowText (cr, text)
-      }
-
-    ##-----for 'BIC'-----
-    cbExposeLabelBIC <- function (gtk.widget, data)
-      {
-        drawable <- gtk.widget$window
-
-        cr <- RGtk2::gdkCairoCreate (drawable)
-
-        text <- paste("BIC: ", signif(info.fanc$BIC.current, digits=6), sep="")
-        RGtk2::cairoSetFontSize (cr, 15)
-        RGtk2::cairoMoveTo (cr, 0, 30)
-        RGtk2::cairoShowText (cr, text)
-      }
-
-    ##-----for 'CAIC'-----
-    cbExposeLabelCAIC <- function (gtk.widget, data)
-      {
-        drawable <- gtk.widget$window
-
-        cr <- RGtk2::gdkCairoCreate (drawable)
-
-        text <- paste("CAIC: ", signif(info.fanc$CAIC.current, digits=6), sep="")
-        RGtk2::cairoSetFontSize (cr, 15)
-        RGtk2::cairoMoveTo (cr, 0, 30)
-        RGtk2::cairoShowText (cr, text)
-      }
-
-
-    ##-----for 'gamma'-----
-    cbExposeLabelGamma <- function (gtk.widget, data)
-      {
-        drawable <- gtk.widget$window
-
-        cr <- RGtk2::gdkCairoCreate (drawable)
-
-        text <- sprintf ("gam : %f", info.fanc$gamma.current)
-        RGtk2::cairoSetFontSize (cr, 15)
-        RGtk2::cairoMoveTo (cr, 0, 30)
-        RGtk2::cairoShowText (cr, text)
-      }
-
-
-    ##callback function for value-changed signal of GtkScale widget ("canvas")
-    ##-----for 'rho'-----
-    cbValueChangedLambda <- function (gtk.scale, data)
-      {
-        if (RGtk2::gtkRangeGetValue (gtk.scale) == 0) {
-          info.fanc$num.lambda <<- 1
-          ##    assign("info.fanc$num.lambda" ,1, pos=globalenv())
-        }
-        else {
-          info.fanc$num.lambda <<- ceiling(RGtk2::gtkRangeGetValue (gtk.scale) * info.fanc$N.lambda) ##modify error
-        }
-        RGtk2::gtkWidgetQueueDraw (data) ##make expose-event signal for canvas
-      }
-
-    ##-----for 'gamma'-----
-    cbValueChangedGamma <- function (gtk.scale, data)
-      {
-        if (RGtk2::gtkRangeGetValue (gtk.scale) == 0) {
-          info.fanc$num.gamma <<- 1
-        }
-        else {
-          info.fanc$num.gamma <<- ceiling(RGtk2::gtkRangeGetValue (gtk.scale) * info.fanc$N.gamma) ##modify error
-        }
-
-        info.fanc$lambda.current <<- info.fanc$lambdas[info.fanc$num.lambda, info.fanc$num.gamma]
-
-        RGtk2::gtkWidgetQueueDraw (data) ##make expose-event signal for canvas
-      }
-
-
-
-    ##callback function for value-changed signal of GtkScale widget ("label")
-    ##-----for 'rho'-----
-    cbValueChangedLabelLambda <- function (gtk.scale, data)
-      {
-                                        #if (RGtk2::gtkRangeGetValue (gtk.scale) == 0) {
-                                        #  info.fanc$lambda.current <<- info.fanc$lambdas[1, info.fanc$num.gamma]
-                                        #}
-                                        #else {
-                                        #  info.fanc$lambda.current <<- info.fanc$lambdas[ceiling(RGtk2::gtkRangeGetValue (gtk.scale) * info.fanc$N.lambda), info.fanc$num.gamma] ##modify error
-                                        #}
-        info.fanc$lambda.current <<- info.fanc$lambdas[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$GFI.current <<- info.fanc$GFIs[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$AGFI.current <<- info.fanc$AGFIs[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$AIC.current <<- info.fanc$AICs[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$BIC.current <<- info.fanc$BICs[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$CAIC.current <<- info.fanc$CAICs[info.fanc$num.lambda, info.fanc$num.gamma]
-
-        RGtk2::gtkWidgetQueueDraw (data[[1]]) ##make an expose-event signal for label.lambda
-        RGtk2::gtkWidgetQueueDraw (data[[2]]) ##make an expose-event signal for label.GFI
-        RGtk2::gtkWidgetQueueDraw (data[[3]]) ##make an expose-event signal for label.AGFI
-        RGtk2::gtkWidgetQueueDraw (data[[4]]) ##make an expose-event signal for label.AIC
-        RGtk2::gtkWidgetQueueDraw (data[[5]]) ##make an expose-event signal for label.BIC
-        RGtk2::gtkWidgetQueueDraw (data[[6]]) ##make an expose-event signal for label.CAIC
-      }
-
-    ##-----for 'gamma'-----
-    cbValueChangedLabelGamma <- function (gtk.scale, data)
-      {
-        if (RGtk2::gtkRangeGetValue (gtk.scale) == 0) {
-          info.fanc$gamma.current <<- info.fanc$gammas[1]
-        }
-        else {
-          info.fanc$gamma.current <<- info.fanc$gammas[ceiling(RGtk2::gtkRangeGetValue (gtk.scale) * info.fanc$N.gamma)] ##modify error
-        }
-
-        info.fanc$lambda.current <<- info.fanc$lambdas[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$GFI.current <<- info.fanc$GFIs[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$AGFI.current <<- info.fanc$AGFIs[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$AIC.current <<- info.fanc$AICs[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$BIC.current <<- info.fanc$BICs[info.fanc$num.lambda, info.fanc$num.gamma]
-        info.fanc$CAIC.current <<- info.fanc$CAICs[info.fanc$num.lambda, info.fanc$num.gamma]
-
-        RGtk2::gtkWidgetQueueDraw (data[[1]]) ##make an expose-event signal for label.gamma
-        RGtk2::gtkWidgetQueueDraw (data[[2]]) ##make an expose-event signal forlabel.lambda
-        RGtk2::gtkWidgetQueueDraw (data[[3]]) ##make an expose-event signal forlabel.GFI
-        RGtk2::gtkWidgetQueueDraw (data[[4]]) ##make an expose-event signal forlabel.AGFI
-        RGtk2::gtkWidgetQueueDraw (data[[5]]) ##make an expose-event signal forlabel.AIC
-        RGtk2::gtkWidgetQueueDraw (data[[6]]) ##make an expose-event signal forlabel.BIC
-        RGtk2::gtkWidgetQueueDraw (data[[7]]) ##make an expose-event signal forlabel.CAIC
-      }
-
-
-    ## callback function for clicked signal of GtkScale widget ("button.loadings")
-	cbButtonClicked <- function (gtk.widget, data)
-      {
-        print(info.fanc$L[[info.fanc$num.gamma]][[info.fanc$num.lambda]])
-      }
-
-
-    ##-----main window to depict-----##
-    MakeInterface <- function (gchar.title)
-      {
-        ##"info" includes 'L' and 'lambdas'.
-        ##'L' is a p*m*r array of pattern matrices
-        ##'lambdas' is a r*1 vector of tuning parameter
-
-        lambdas <- info.fanc$lambdas
-        gammas <- info.fanc$gammas
-
-        ##the range of lambda, gamma are restricted in (0, 1)
-        ##for 'rho'
-        N.lambda <- length(lambdas[,1])
-        Min.lambda <- 0
-        Max.lambda <- 1
-        Step.lambda <- 1 / (N.lambda - 1)
-
-        ##for 'gamma'
-        N.gamma <- length(gammas)
-        Min.gamma <- 0
-        Max.gamma <- 1
-        Step.gamma <- 1 / (N.gamma - 1)
-
-        window <- RGtk2::gtkWindowNew (show=FALSE)
-        RGtk2::gtkWindowSetTitle (window, gchar.title)
-        ##  RGtk2::gtkWidgetSetSizeRequest (window, info.fanc$Window.Width, info.fanc$Window.Height)
-        RGtk2::gtkWidgetSetSizeRequest (window, info.fanc$Window.Width, -1)
-        RGtk2::gtkContainerSetBorderWidth (window, 5)
-        ##  RGtk2::gSignalConnect (window, "destroy", gtkMainQuit, NULL) ##maybe not needed
-
-
-        ##-------------------
-        ##    depict the path diagram
-        ##-------------------
-        vbox <- RGtk2::gtkVBoxNew (FALSE, 3)
-        RGtk2::gtkContainerAdd (window, vbox)
-        RGtk2::gtkContainerSetBorderWidth (vbox, 5)
-
-        alignment <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackStart (vbox, alignment, TRUE, TRUE, 0)
-
-        canvas <- RGtk2::gtkDrawingAreaNew ()
-        RGtk2::gtkContainerAdd (alignment, canvas)
-        RGtk2::gtkWidgetSetSizeRequest (canvas, info.fanc$Window.Width, info.fanc$Window.Height)
-        RGtk2::gSignalConnect (canvas, "expose-event", cbExposeCanvas, NULL)
-
-
-        ##-----------------------
-        ##  depict the goodness of fit indices
-        ##-----------------------
-        ##-----for goodness of fit indecies-----
-        hbox.GFI <- RGtk2::gtkHBoxNew (FALSE, 5)
-        RGtk2::gtkBoxPackStart (vbox, hbox.GFI, FALSE, FALSE, 0)
-
-        ##depict the value of GFI
-        alignment.GFI <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackStart (hbox.GFI, alignment.GFI, TRUE, FALSE, 0)
-
-        label.GFI <- RGtk2::gtkDrawingAreaNew ()
-        RGtk2::gtkContainerAdd (alignment.GFI, label.GFI)
-        RGtk2::gtkWidgetSetSizeRequest (label.GFI, 130, 50)
-        RGtk2::gSignalConnect (label.GFI, "expose-event", cbExposeLabelGFI, NULL)
-
-        ## RGtk2::gtkBoxPackStart (hbox.GFI, scale.lambda, TRUE, TRUE, 0)
-
-
-        ##depict the value of AGFI
-        ##  vbox.AGFI <- RGtk2::gtkVBoxNew (FALSE, 5)
-        ##  RGtk2::gtkBoxPackStart (vbox.AGFI, hbox.GFI, FALSE, FALSE, 0)
-        alignment.AGFI <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackStart (hbox.GFI, alignment.AGFI, TRUE, FALSE, 0)
-
-        label.AGFI <- RGtk2::gtkDrawingAreaNew ()
-        RGtk2::gtkContainerAdd (alignment.AGFI, label.AGFI)
-        RGtk2::gtkWidgetSetSizeRequest (label.AGFI, 130, 50)
-        RGtk2::gSignalConnect (label.AGFI, "expose-event", cbExposeLabelAGFI, NULL)
-
-        ##depict the value of AIC
-        ##  vbox.AIC <- RGtk2::gtkVBoxNew (FALSE, 5)
-        ##  RGtk2::gtkBoxPackStart (vbox.AIC, hbox.GFI, FALSE, FALSE, 0)
-        alignment.AIC <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackStart (hbox.GFI, alignment.AIC, TRUE, FALSE, 0)
-
-        label.AIC <- RGtk2::gtkDrawingAreaNew ()
-        RGtk2::gtkContainerAdd (alignment.AIC, label.AIC)
-        RGtk2::gtkWidgetSetSizeRequest (label.AIC, 130, 50)
-        RGtk2::gSignalConnect (label.AIC, "expose-event", cbExposeLabelAIC, NULL)
-
-
-        ##depict the value of BIC
-        ##  vbox.BIC <- RGtk2::gtkVBoxNew (FALSE, 5)
-        ##  RGtk2::gtkBoxPackStart (vbox.BIC, hbox.GFI, FALSE, FALSE, 0)
-        alignment.BIC <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackStart (hbox.GFI, alignment.BIC, TRUE, FALSE, 0)
-
-        label.BIC <- RGtk2::gtkDrawingAreaNew ()
-        RGtk2::gtkContainerAdd (alignment.BIC, label.BIC)
-        RGtk2::gtkWidgetSetSizeRequest (label.BIC, 130, 50)
-        RGtk2::gSignalConnect (label.BIC, "expose-event", cbExposeLabelBIC, NULL)
-
-
-        ##depict the value of CAIC
-        ##  vbox.CAIC <- RGtk2::gtkVBoxNew (FALSE, 5)
-        ##  RGtk2::gtkBoxPackStart (vbox.CAIC, hbox.GFI, FALSE, FALSE, 0)
-        alignment.CAIC <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackStart (hbox.GFI, alignment.CAIC, TRUE, FALSE, 0)
-
-        label.CAIC <- RGtk2::gtkDrawingAreaNew ()
-        RGtk2::gtkContainerAdd (alignment.CAIC, label.CAIC)
-        RGtk2::gtkWidgetSetSizeRequest (label.CAIC, 130, 50)
-        RGtk2::gSignalConnect (label.CAIC, "expose-event", cbExposeLabelCAIC, NULL)
-
-
-        ##-----------------------
-        ##   make the scale bar
-        ##-----------------------
-        ##-----for 'rho'-----
-        hbox.lambda <- RGtk2::gtkHBoxNew (FALSE, 5)
-        RGtk2::gtkBoxPackStart (vbox, hbox.lambda, FALSE, FALSE, 0)
-
-        scale.lambda <- RGtk2::gtkHScaleNewWithRange (Min.lambda, Max.lambda, Step.lambda)
-        RGtk2::gtkScaleSetDigits (scale.lambda, 2)
-        RGtk2::gtkScaleSetDrawValue (scale.lambda, FALSE) ##The presence or absence of display of value under the bar
-
-        ##depict the value of rho
-        alignment.lambda <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackStart (hbox.lambda, alignment.lambda, FALSE, FALSE, 0)
-
-        label.lambda <- RGtk2::gtkDrawingAreaNew ()
-        RGtk2::gtkContainerAdd (alignment.lambda, label.lambda)
-        RGtk2::gtkWidgetSetSizeRequest (label.lambda, 120, 50)
-                                        #RGtk2::gtkWidgetSetSizeRequest (label.lambda, 100, 50)
-        RGtk2::gSignalConnect (label.lambda, "expose-event", cbExposeLabelLambda, NULL)
-
-        RGtk2::gtkBoxPackStart (hbox.lambda, scale.lambda, TRUE, TRUE, 0)
-
-
-
-        ##-----for 'gamma'-----
-        hbox.gamma <- RGtk2::gtkHBoxNew (FALSE, 5)
-        RGtk2::gtkBoxPackStart (vbox, hbox.gamma, FALSE, FALSE, 0)
-
-        scale.gamma <- RGtk2::gtkHScaleNewWithRange (Min.gamma, Max.gamma, Step.gamma)
-        RGtk2::gtkScaleSetDigits (scale.gamma, 2)
-        RGtk2::gtkScaleSetDrawValue (scale.gamma, FALSE) ##The presence or absence of display of value under the bar
-
-        ##depict the value of gamma
-        alignment.gamma <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackStart (hbox.gamma, alignment.gamma, FALSE, FALSE, 0)
-
-        label.gamma <- RGtk2::gtkDrawingAreaNew ()
-        RGtk2::gtkContainerAdd (alignment.gamma, label.gamma)
-        RGtk2::gtkWidgetSetSizeRequest (label.gamma, 120, 50)
-                                        #RGtk2::gtkWidgetSetSizeRequest (label.gamma, 100, 50)
-        RGtk2::gSignalConnect (label.gamma, "expose-event", cbExposeLabelGamma, NULL)
-
-        RGtk2::gtkBoxPackStart (hbox.gamma, scale.gamma, TRUE, TRUE, 0)
-
-
-        ##-----------------------
-        ##    display the output button
-        ##-----------------------
-        hbox.button <- RGtk2::gtkHBoxNew (FALSE, 5)
-        RGtk2::gtkBoxPackStart (vbox, hbox.button, FALSE, FALSE, 0)
-        button.loadings <- RGtk2::gtkButtonNewWithLabel ("Output loadings")
-        alignment.button <- RGtk2::gtkAlignmentNew (0.5, 0.5, 0, 0)
-        RGtk2::gtkBoxPackEnd (hbox.button, alignment.button, FALSE, FALSE, 0)
-        RGtk2::gtkContainerAdd (alignment.button, button.loadings)
-        RGtk2::gtkWidgetSetSizeRequest (button.loadings, 120, 50)
-        RGtk2::gSignalConnect (button.loadings, "clicked", cbButtonClicked, NULL)
-
-
-        ##---------------------------------
-        ##   make value-changed signal
-        ##--------------------------------
-        RGtk2::gSignalConnect (scale.lambda, "value_changed", cbValueChangedLambda, canvas)
-        RGtk2::gSignalConnect (scale.lambda, "value_changed", cbValueChangedLabelLambda, list(label.lambda, label.GFI, label.AGFI, label.AIC, label.BIC, label.CAIC))
-        RGtk2::gSignalConnect (scale.gamma, "value_changed", cbValueChangedGamma, canvas)
-        RGtk2::gSignalConnect (scale.gamma, "value_changed", cbValueChangedLabelGamma, list(label.gamma, label.lambda, label.GFI, label.AGFI, label.AIC, label.BIC, label.CAIC))
-
-
-        ##---------------------------------
-        ##        display Window
-        ##--------------------------------
-        RGtk2::gtkWidgetShowAll(window)
-      }
-
-    MakeInterface ("Factor analysis with MC+")
-
-
-  } else if (identical(type, "heatmap") || (is.null(type) && dim(x$x)[2] >= 50)) {
-
-    if(nchar(system.file(package="matlab")) == 0){
-      answer <- readline("The package 'matlab' is required to plot the solution path. \nDo you want to install 'matlab' now?  (y/n)")
+    # check ellipse library
+    if(nchar(system.file(package="ellipse")) == 0){
+        msg <- paste0("The package 'ellipse' is required to plot ",
+            "the solution path.\n",
+            "Do you want to install 'ellipse' now? (y/n)")
+        answer <- readline(msg)
       if(answer=="y"){
-        install.packages("matlab")
-        if (nchar(system.file(package="matlab")) == 0) stop('The package "matlab" was not able to be installed')
+        install.packages("ellipse")
+        if (nchar(system.file(package="ellipse")) == 0) stop('The package "ellipse" was not able to be installed')
       } else {
         stop("The plot was terminated.")
       }
     }
-
+    requireNamespace("ellipse", quietly=TRUE)
+    # check tcltk library
     if(nchar(system.file(package="tcltk")) == 0){
-      answer <- readline("The package 'tcltk' is required to plot the solution path. \nDo you want to install 'tcltk' now?  (y/n)")
+     answer <- readline("The package 'tcltk' is required to plot the solution path. \nDo you want to install 'tcltk' now?  (y/n)")
       if(answer=="y"){
           install.packages("tcltk")
           if (nchar(system.file(package="tcltk")) == 0) stop('The package "tcltk" was not able to be installed')
@@ -701,14 +67,101 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="reparametriza
           stop("The plot was terminated.")
       }
     }
-
-    requireNamespace("matlab", quietly=TRUE)
     requireNamespace("tcltk", quietly=TRUE)
+    
+    # check plot type
+    fig.type <- ""
+    if (identical(type, "path") ||
+        (is.null(type) && dim(x$loadings[[1]][[1]])[1] < 50)) {
+        if(dim(x$loadings[[1]][[1]])[1] > 100) {
+            msg <- paste0("The number of variables must be less than or",
+                   "equal to 100 to plot the solution path.")
+            stop(msg)
+        }
+        if(Window.Height<250 || Window.Height>2000) {
+            stop("'Window.Height' must be in [250,2000].")
+        }
+        #
+        fig.type <- "path"
+    } else if (identical(type, "heatmap") ||
+               (is.null(type) && dim(x$x)[2] >= 50)) {
+        fig.type <- "heatmap"
+    } else {
+        stop("Only 'path' and 'heatmap' are available for 'type'")
+    }
+    ##extract the factor pattern
+    L <- x$loadings
+    lambdas <- x$rho
+    gammas <- x$gamma
+    if(df.method=="reparametrization"){
+        GFIs <- x$GFI
+        AGFIs <- x$AGFI
+	CFIs <- x$CFI
+	RMSEAs <- x$RMSEA
+	SRMRs <- x$SRMR
+        AICs <- x$AIC
+        BICs <- x$BIC
+        CAICs <- x$CAIC
+	EBICs <- x$EBIC
+    }
+    if(df.method=="active"){
+        GFIs <- x$GFI
+        AGFIs <- x$AGFI_dfnonzero
+	CFIs <- x$CFI_dfnonzero
+	RMSEAs <- x$RMSEA_dfnonzero
+	SRMRs <- x$SRMR
+
+        AICs <- x$AIC_dfnonzero
+        BICs <- x$BIC_dfnonzero
+        CAICs <- x$CAIC_dfnonzero
+	EBICs <- x$EBIC_dfnonzero
+    }
+    info.fanc <- list("Rad.Ellipse"=50, "Len.Rec"=50,
+		      "Window.Height"=Window.Height,
+                      "N.var"=NULL, "N.fac"=NULL, "N.lambda"=NULL,
+                      "L"=NULL, "lambdas"=NULL, "num.lambda"=1,
+		      "num.gamma"=1,"num.GFI"=1)
+
+    info.fanc$lambda.current <- lambdas[1,1]
+    info.fanc$gamma.current <- gammas[1]
+    info.fanc$GFI.current <- GFIs[1]
+    info.fanc$AGFI.current <- AGFIs[1]
+    info.fanc$CFI.current <- CFIs[1]
+    info.fanc$RMSEA.current <- RMSEAs[1]
+    info.fanc$SRMR.current <- SRMRs[1]
+
+    info.fanc$AIC.current <- AICs[1]
+    info.fanc$BIC.current <- BICs[1]
+    info.fanc$CAIC.current <- CAICs[1]
+    info.fanc$EBIC.current <- EBICs[1]
+    info.fanc$L <- L
+    info.fanc$lambdas <- lambdas
+    info.fanc$gammas <- gammas
+    info.fanc$num.lambda <- 1
+    info.fanc$num.gamma <- 1
+    info.fanc$GFIs <- GFIs
+    info.fanc$AGFIs <- AGFIs
+    info.fanc$CFIs <- CFIs
+    info.fanc$RMSEAs <- RMSEAs
+    info.fanc$SRMRs <- SRMRs
+
+    info.fanc$AICs <- AICs
+    info.fanc$BICs <- BICs
+    info.fanc$CAICs <- CAICs
+    info.fanc$EBICs <- EBICs
+
+    info.fanc$N.var <- dim(info.fanc$L[[1]][[1]])[1]
+    info.fanc$N.fac <- dim(info.fanc$L[[1]][[1]])[2]
+    info.fanc$N.lambda <- length(info.fanc$L[[1]])
+    info.fanc$N.gamma <- length(info.fanc$L)
+    info.fanc$Window.Width <- max(((info.fanc$N.var+1) * info.fanc$Len.Rec + (info.fanc$N.var+2) * info.fanc$Len.Rec / 2), ((info.fanc$N.fac) * 1.5 * info.fanc$Rad.Ellipse),650)
 
     ##For image function
     n.col <- 256
-    col.red <- rgb(red=1, green = (0:n.col)/n.col, blue = (0:n.col)/n.col, names = paste("red", 0:n.col, sep = "."))
-    col.black <- rgb(red=(0:n.col)/n.col, green = (0:n.col)/n.col, blue = (0:n.col)/n.col, names = paste("black", 0:n.col, sep = "."))
+    col.red <- rgb(red=1, green = (0:n.col)/n.col, blue = (0:n.col)/n.col,
+                   names = paste("red", 0:n.col, sep = "."))
+    col.black <- rgb(red=(0:n.col)/n.col, green = (0:n.col)/n.col,
+        blue = (0:n.col)/n.col, names = paste("black", 0:n.col, sep = "."))
     col.all <- c(col.red,rev(col.black))
     max.col <- 0
     for(i in 1:length(x$loadings)){
@@ -716,182 +169,956 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="reparametriza
         max.col <- max(max.col,max(abs(x$loadings[[i]][[j]])))
       }
     }
+    #--
+    isPDF <- FALSE
+    PDFFileName <- ""
+    pngFileName <- ""
 
-
-    N.rho <- nrow(fit$rho); N.gamma <- ncol(fit$rho); sl.names <- c("rho", "gamma"); sl.mins <- c(1, 1); sl.maxs <- c(N.rho, N.gamma); sl.deltas <- c(1, 1); sl.defaults <- c(1, 1); fit <- fit
-    slider.env <- new.env()
-    slider.fanc <- function (sl.names, sl.mins, sl.maxs, sl.deltas,
-                             sl.defaults, but.functions, but.names, no, set.no.value,
-                             obj.name, obj.value, reset.function, title, fit) {
-      N.rho <- sl.maxs[1]
-      N.gamma <- sl.maxs[2]
-      if (!missing(no))
-        return(as.numeric(tcltk::tclvalue(get(paste("slider", no, sep = ""), envir = slider.env))))
-      if (!missing(set.no.value)) {
-        try(eval(parse(text = paste("tcltk::tclvalue(slider", set.no.value[1], ")<-", set.no.value[2], sep = "")), envir = slider.env))
-        return(set.no.value[2])
-      }
-      ## if (!exists("slider.env"))
-      ##   slider.env <<- new.env()
-      if (!missing(obj.name)) {
-        if (!missing(obj.value)) {
-          assign(obj.name, obj.value, envir = slider.env)
-        } else {
-          obj.value <- get(obj.name, envir = slider.env)
+    # ---------------------------------------------
+    # definitions functions
+    # ---------------------------------------------
+    # generation of uniq filename
+    uniqFilename <- function(suffix) {
+        nlen <- 17
+        st <- strtoi(charToRaw('a'), 16)
+        fin <- strtoi(charToRaw('z'), 16)
+        fname <- ""
+        while (TRUE) {
+            xraw <- as.raw(floor(runif(nlen, st, fin+1)))
+            fname <- paste(rawToChar(xraw), '.',suffix,sep='',collapse='')
+            if (!file.exists(fname)) {
+                break
+            }
         }
-        return(obj.value)
+        return(fname)
+    }
+    # get appropriate font size
+    # width: # of pixels of spcae width
+    # nlen : # of characters
+    # dpi  : dots per inche
+    # font size in point
+    minFontSize <- 10
+    wscale <- 1.2
+    win.dpi <- 72
+    apprFontSize <- function( width, nlen, dpi=win.dpi ) {
+        width0 <- floor(width * wscale)
+        pts <- floor( 72*width0/(nlen*dpi) )
+        len    <- nlen
+        if (pts<minFontSize) {
+            len <- floor( 72*width0/(minFontSize*dpi) )
+            pts <- minFontSize
+        }
+        return( c(pts, len) )
+    }
+    ##callback function for expose-event signal of GtkWidget label
+    ##-----for 'rho'-----
+    cbExposeLabelLambda <- function () {
+        text <- sprintf ("rho : %.6f", info.fanc$lambda.current)
+	tcltk::tkconfigure(fr3.label, text=text, font=fontSmall)
+    }
+
+    ##-----for 'GFI'-----
+    cbExposeLabelGFI <- function () {
+	text <- sprintf("%5s: %5.3f", "GFI", info.fanc$GFI.current)
+	tcltk::tkconfigure(fr1.gfi, text=text, font=fontSmall)
+    }
+
+    ##-----for 'AGFI'-----
+    cbExposeLabelAGFI <- function () {
+	text <- sprintf("%5s: %5.3f", "AGFI", info.fanc$AGFI.current)
+	tcltk::tkconfigure(fr1.agfi, text=text, font=fontSmall)
+    }
+
+    ##-----for 'CFI'-----
+    cbExposeLabelCFI <- function () {
+	text <- sprintf("%5s: %5.3f", "CFI", info.fanc$CFI.current)
+	tcltk::tkconfigure(fr1.cfi, text=text, font=fontSmall)
+    }
+
+    ##-----for 'RMSEA'-----
+    cbExposeLabelRMSEA <- function () {
+	text <- sprintf("%5s: %5.3f", "RMSEA", info.fanc$RMSEA.current)
+	tcltk::tkconfigure(fr1.rmsea, text=text, font=fontSmall)
+    }
+
+    ##-----for 'SRMR'-----
+    cbExposeLabelSRMR <- function () {
+	text <- sprintf("%5s: %5.3f", "SRMR", info.fanc$SRMR.current)
+	tcltk::tkconfigure(fr1.srmr, text=text, font=fontSmall)
+    }
+
+    ##-----for 'AIC'-----
+    cbExposeLabelAIC <- function () {
+	text <- sprintf("%5s: %.4f", "AIC", info.fanc$AIC.current)
+	tcltk::tkconfigure(fr2.aic, text=text, font=fontSmall)
       }
-      if (missing(title))
-        title <- "slider control widget"
 
-      nt <- tcltk::tktoplevel()
-      tcltk::tkwm.title(nt, title)
-      tcltk::tkwm.geometry(nt, "+0+0")
-      if (missing(sl.names))
-        sl.names <- NULL
+    ##-----for 'BIC'-----
+    cbExposeLabelBIC <- function () {
+	text <- sprintf("%5s: %.4f", "BIC", info.fanc$BIC.current)
+	tcltk::tkconfigure(fr2.bic, text=text, font=fontSmall)
+    }
 
-      ##output rho
-      i <- 1
-      eval(parse(text = paste("assign('slider", i, "',tcltk::tclVar(sl.defaults[i]),envir=slider.env)", sep = "")))
-      tcltk::tkpack(fr.rho <- tcltk::tkframe(nt))
-      sc1 <- tcltk::tkscale(fr.rho, from = sl.mins[i], to = sl.maxs[i], showvalue = F, resolution = sl.deltas[i], orient = "horiz", length = 500)
-      tcltk::tkpack(fr.rho, sc1)
-      assign("sc1", sc1, envir = slider.env)
-      eval(parse(text = paste("tcltk::tkconfigure(sc1,variable=slider", i, ")", sep = "")), envir = slider.env)
-      label.temp <- as.character(fit$rho[N.rho, N.gamma])
-      my.label1 <- tcltk::tclVar(paste("rho: ", label.temp, sep=""))
-      lab.rho <- tcltk::tklabel(fr.rho, textvariable=my.label1, width = "25")
-      tcltk::tkpack(lab.rho, sc1, side = "bottom", anchor="w")
+    ##-----for 'CAIC'-----
+    cbExposeLabelCAIC <- function () {
+	text <- sprintf("%5s: %.4f", "CAIC", info.fanc$CAIC.current)
+	tcltk::tkconfigure(fr2.caic, text=text, font=fontSmall)
+    }
 
-      ##insert space under the scale bar of rho 
-      tcltk::tkpack(fr.space1 <- tcltk::tkframe(nt))
-      lab.space1 <- tcltk::tklabel(fr.space1, textvariable=tcltk::tclVar(""))
-      tcltk::tkpack(fr.space1, lab.space1)
+    ##-----for 'EBIC'-----
+    cbExposeLabelEBIC <- function () {
+	text <- sprintf("%5s: %.4f", "EBIC", info.fanc$EBIC.current)
+	tcltk::tkconfigure(fr2.ebic, text=text, font=fontSmall)
+    }
 
-      ##output gamma
-      i <- 2
-      eval(parse(text = paste("assign('slider", i, "',tcltk::tclVar(sl.defaults[i]),envir=slider.env)", sep = "")))
-      tcltk::tkpack(fr.gamma <- tcltk::tkframe(nt))
-      sc2 <- tcltk::tkscale(fr.gamma, from = sl.mins[i], to = sl.maxs[i], showvalue = F, resolution = sl.deltas[i], orient = "horiz", length = 500)
-      tcltk::tkpack(fr.gamma, sc2)
-      assign("sc2", sc2, envir = slider.env)
-      eval(parse(text = paste("tcltk::tkconfigure(sc2,variable=slider", i, ")", sep = "")), envir = slider.env)
-      label.temp <- as.character(fit$gamma[N.gamma])
-      my.label2 <- tcltk::tclVar(paste("gamma: ", label.temp, sep=""))
-      lab.gamma <- tcltk::tklabel(fr.gamma, textvariable=my.label2, width = "25")
-      tcltk::tkpack(lab.gamma, sc2, side = "bottom", anchor='w')
+    ##-----for 'gamma'-----
+    cbExposeLabelGamma <- function () {
+        text <- sprintf ("gam : %f", info.fanc$gamma.current)
+	tcltk::tkconfigure(fr4.label, text=text, font=fontSmall)
+    }
 
-      ##insert space under the scale bar of gamma
-      tcltk::tkpack(fr.space2 <- tcltk::tkframe(nt))
-      lab.space2 <- tcltk::tklabel(fr.space2, textvariable=tcltk::tclVar(""))
-      tcltk::tkpack(fr.space2, lab.space2)
+    #
+    onClickLoadings <- function () {
+        print(info.fanc$L[[info.fanc$num.gamma]][[info.fanc$num.lambda]])
+    }
+    #
+    onClickPDF <- function() {
+	filename <- tcltk::tclvalue(tcltk::tkgetSaveFile())
+	if (nchar(filename)>0) {
+	    isPDF <<- TRUE
+	    PDFFileName <<- filename
+	    cbExposeCanvas()
+	    isPDF <<- FALSE
+	}
+    }
+    #
+    onClickOut <- function() {
+	lambda.current <- info.fanc$lambda.current
+	gamma.current <- info.fanc$gamma.current
+	print(out(x, rho=lambda.current, gamma=gamma.current))
+    }
 
+    ##callback function for value-changed signal of GtkScale widget
+    ##("canvas")
+    cbExposePath <- function () {
+        maxStrLen <- 6
+        orgFontSize <- par("ps")
+        N.var <- info.fanc$N.var
+        N.fac <- info.fanc$N.fac
+	Window.Width <- as.numeric(tcltk::tkwinfo("width", canvas))
+	Window.Height <- as.numeric(tcltk::tkwinfo("height", canvas))
+	scale.x <- Window.Width / info.fanc$Window.Width
+	scale.y <- Window.Height / info.fanc$Window.Height
+        Rad.Ellipse.x <- info.fanc$Rad.Ellipse * scale.x * 2
+        Rad.Ellipse.y <- info.fanc$Rad.Ellipse * scale.y
+        Len.Rec.x <- info.fanc$Len.Rec * scale.x
+        Len.Rec.y <- info.fanc$Len.Rec * scale.y
 
-      ##-----------------------
-      ##    output goodness of fit indices
-      ##-----------------------
-      tcltk::tkpack(fr.criteria <- tcltk::tkframe(nt))
-      ##GFI
-      label.temp <- as.character(signif(fit$GFI[N.rho, N.gamma], digits=6))
-      label.GFI <- tcltk::tclVar(paste("GFI: ", label.temp, sep=""))
-      lab.GFI <- tcltk::tklabel(fr.criteria, textvariable=label.GFI, width = "14")
-      tcltk::tkpack(fr.criteria, lab.GFI, side="left", fill="none", anchor='w')
-      ##AGFI
-      label.temp <- as.character(signif(fit$AGFI[N.rho, N.gamma], digits=6))
-      label.AGFI <- tcltk::tclVar(paste("AGFI: ", label.temp, sep=""))
-      lab.AGFI <- tcltk::tklabel(fr.criteria, textvariable=label.AGFI, width = "14")
-      tcltk::tkpack(lab.GFI, lab.AGFI, side = "left", anchor='w')
-      ##AIC
-      label.temp <- as.character(signif(fit$AIC[N.rho, N.gamma], digits=6))
-      label.AIC <- tcltk::tclVar(paste("AIC: ", label.temp, sep=""))
-      lab.AIC <- tcltk::tklabel(fr.criteria, textvariable=label.AIC, width = "14")
-      tcltk::tkpack(lab.AGFI, lab.AIC, side="left", fill="none", anchor='w')
-      ##BIC
-      label.temp <- as.character(signif(fit$BIC[N.rho, N.gamma], digits=6))
-      label.BIC <- tcltk::tclVar(paste("BIC: ", label.temp, sep=""))
-      lab.BIC <- tcltk::tklabel(fr.criteria, textvariable=label.BIC, width = "14")
-      tcltk::tkpack(lab.AIC, lab.BIC, side="left", anchor='w')
-      ##CAIC
-      label.temp <- as.character(signif(fit$CAIC[N.rho, N.gamma], digits=6))
-      label.CAIC <- tcltk::tclVar(paste("CAIC: ", label.temp, sep=""))
-      lab.CAIC <- tcltk::tklabel(fr.criteria, textvariable=label.CAIC, width = "14")
-      tcltk::tkpack(lab.BIC, lab.CAIC, side="left", anchor='w')
-      ##EBIC
-      label.temp <- as.character(signif(fit$EBIC[N.rho, N.gamma], digits=6))
-      label.EBIC <- tcltk::tclVar(paste("EBIC: ", label.temp, sep=""))
-      lab.EBIC <- tcltk::tklabel(fr.criteria, textvariable=label.EBIC, width = "14")
-      tcltk::tkpack(lab.CAIC, lab.EBIC, side="left", anchor='w')
+	Sep.Ellipse   <- info.fanc$Rad.Ellipse * scale.x / 2
+	Step.Ellipse  <- Rad.Ellipse.x + Sep.Ellipse
+	Sep.Rec       <- Len.Rec.x/2
+	Step.Rec      <- Len.Rec.x + Sep.Rec
 
+        # calc. font size
+        #   for factors
+        len <- 1 + floor(log10(N.fac))
+        fontParams1 <- apprFontSize(Rad.Ellipse.x, len)
+        #   for variable
+        if (length(colnames(x$x)) == 0 ) {
+            len <- 1 + floor(log10(N.var)) + 1
+            fontParams2 <- apprFontSize(Len.Rec.x, len)
+        } else {
+            len <- max(nchar(colnames(x$x)))
+            if ( len > maxStrLen ) {
+                len <- maxStrLen+2      # 2 characters for '..'
+            }
+            fontParams2 <- apprFontSize(Len.Rec.x, len)
+        }
+        fontSize <- min(c(fontParams1[1], fontParams2[1]))
+        strLen <- fontParams2[2]
+        if (strLen > maxStrLen) {
+            strLen <- maxStrLen
+        }
+        HN.var <- N.var / 2
+        HN.fac <- N.fac / 2
 
-      ##-----------------------
-      ##    output factor loadings
-      ##-----------------------
-      ##insert space under the goodness of fit indices
-      tcltk::tkpack(fr.space3 <- tcltk::tkframe(nt))
-      lab.space3 <- tcltk::tklabel(fr.space3, textvariable=tcltk::tclVar(""))
-      tcltk::tkpack(fr.space3, lab.space3)
+	par(plt=c(0,1,0,1))
+	par(mai=c(0, 0, 0, 0))
+	par(mar=c(0, 0, 0, 0))
+	par(omd=c(0, 1, 0, 1))
+	par(oma=c(0, 0, 0, 0))
+	par(omi=c(0, 0, 0, 0))
+	par(xpd=NA)
+	dev.off()
+	if ( isPDF == TRUE ) {
+	    aspect <- Window.Width / Window.Height
+	    if ( aspect > 1.417 ) {
+		paper.Width <- 8.5
+		paper.Height <- 8.5 / aspect
+	    } else {
+		paper.Height <- 6
+		paper.Width <- 6 * aspect
+	    }
+            # calc. font size for printing
+            winWidthInch <- Window.Width / win.dpi
+            printScale.x <- paper.Width / winWidthInch
+            printFontSize <- floor(fontSize*printScale.x)
+            # debug
+            print(sprintf("printFontSize=%d", printFontSize))
 
-      fun.output.loadings <- function (...) {
-        rho <-   as.numeric(tcltk::tclvalue(get(paste("slider", 1, sep = ""), envir = slider.env)))
-        gamma <- as.numeric(tcltk::tclvalue(get(paste("slider", 2, sep = ""), envir = slider.env)))
-        print(fit$loadings[[gamma]][[rho]])
-      }
-      tcltk::tkpack(fr.button <- tcltk::tkframe(nt))
-      button.loadings <- tcltk::tkbutton(fr.button, text = "Output loadings", command=fun.output.loadings)
-      tcltk::tkpack(fr.criteria, fr.button, side="top")
-      tcltk::tkpack(fr.button, button.loadings, side="top", anchor='e')
+	    pdf(file=PDFFileName, width=paper.Width, height=paper.Height,
+	    family="Courier" )
+	    #family="Courier", pointsize=printFontSize )
+	} else {
+            pngFileName <- uniqFilename('png')
+	    png(filename=pngFileName, width=Window.Width,
+		height=Window.Height)
+	}
+	plot(NULL, NULL, xlim=c(0,Window.Width), ylim=c(Window.Height,0),
+	    axes=FALSE, ann=FALSE)
+        ##-------------------
+        ##   depict the Ellipse of factor
+        ##-------------------
+        Rem.N.fac <- N.fac %% 2
+        LineWidth <- 2
+	x0 <- Window.Width / 2
+	y0 <- 0.1 * Window.Height
+	y1 <- y0 - Rad.Ellipse.y / 2
+	y2 <- y0 + Rad.Ellipse.y / 2
 
-      my.fun <- function (...) {
-        rho <-   as.numeric(tcltk::tclvalue(get(paste("slider", 1, sep = ""), envir = slider.env)))
-        gamma <- as.numeric(tcltk::tclvalue(get(paste("slider", 2, sep = ""), envir = slider.env)))
-        label.temp <- as.character(fit$rho[rho, gamma])
-        tcltk::tclvalue(my.label1) <- paste("rho: ", label.temp, sep="")
-        label.temp <- as.character(fit$gamma[gamma])
-        tcltk::tclvalue(my.label2) <- paste("gamma: ", label.temp, sep="")
+	offset.num <- 1
+	Offset.Ellipse <- Sep.Ellipse / 2
+	NN.fac <- HN.fac
+	rad <- seq(-pi, pi, length=40)
+	if (Rem.N.fac != 0) {
+	  offset.num <- 2
+	  Offset.Ellipse <- Rad.Ellipse.x/2 + Sep.Ellipse
+	  NN.fac <- floor(HN.fac)
+	}
+	# for odd case
+	if (Rem.N.fac != 0) {
+          ##depict the center ellipse
+	  x1 <- x0 - Rad.Ellipse.x/2
+	  x2 <- x0 + Rad.Ellipse.x/2
+	  lines(cos(rad)*Rad.Ellipse.x/2+x0, sin(rad)*Rad.Ellipse.y/2+y0,
+		lwd=LineWidth )
+	  ##depict the center label
+          if (isPDF == TRUE) {
+              par(ps=printFontSize)
+          } else {
+              par(ps=fontSize)
+          }
+	  text <- sprintf ("f%d", NN.fac + 1)
+	  x1   <- x0
+	  text(x1, y0, labels=text)
+          par(ps=orgFontSize)
+	}
+	if (NN.fac>0) {
+	  for (i in 1:NN.fac) {
+            ii <- i - 1
+            ##depict the ellipse
+	    x1 <- x0 + Offset.Ellipse + ii*Step.Ellipse
+	    x2 <- x1 + Rad.Ellipse.x
+	    xc <- (x1+x2)/2
+	    lines(cos(rad)*Rad.Ellipse.x/2+xc, sin(rad)*Rad.Ellipse.y/2+y0,
+		    lwd=LineWidth)
 
-        ##GFI
-        label.temp <- as.character(signif(fit$GFI[rho, gamma], digits=6))
-        tcltk::tclvalue(label.GFI) <- paste("GFI: ", label.temp, sep="")
-        ##AGFI
-        label.temp <- as.character(signif(fit$AGFI[rho, gamma], digits=6))
-        tcltk::tclvalue(label.AGFI) <- paste("AGFI: ", label.temp, sep="")
-        ##AIC
-        label.temp <- as.character(signif(fit$AIC[rho, gamma], digits=6))
-        tcltk::tclvalue(label.AIC) <- paste("AIC: ", label.temp, sep="")
-        ##BIC
-        label.temp <- as.character(signif(fit$BIC[rho, gamma], digits=6))
-        tcltk::tclvalue(label.BIC) <- paste("BIC: ", label.temp, sep="")
-        ##CAIC
-        label.temp <- as.character(signif(fit$CAIC[rho, gamma], digits=6))
-        tcltk::tclvalue(label.CAIC) <- paste("CAIC: ", label.temp, sep="")
-        ##EBIC
-        label.temp <- as.character(signif(fit$EBIC[rho, gamma], digits=6))
-        tcltk::tclvalue(label.EBIC) <- paste("EBIC: ", label.temp, sep="")
+	    x2 <- x0 - Offset.Ellipse - ii*Step.Ellipse
+	    x1 <- x2 - Rad.Ellipse.x
+	    xc <- (x1+x2)/2
+	    lines(cos(rad)*Rad.Ellipse.x/2+xc, sin(rad)*Rad.Ellipse.y/2+y0,
+		    lwd=LineWidth)
+	    ##depict the label
+            if (isPDF == TRUE) {
+                par(ps=printFontSize)
+            } else {
+                par(ps=fontSize)
+            }
+	    text <- sprintf ("f%d", NN.fac + offset.num + ii)
+	    x1 <- x0 + (Offset.Ellipse+Rad.Ellipse.x/2) + ii*Step.Ellipse
+	    text(x1, y0, labels=text, ps=fontSize)
 
-        loadings <- fit$loadings[[gamma]][[rho]]
+	    text <- sprintf ("f%d", NN.fac - ii)
+	    x1 <- x0 - (Offset.Ellipse+Rad.Ellipse.x/2) - ii*Step.Ellipse
+	    text(x1, y0, labels=text, ps=fontSize)
+            par(ps=orgFontSize)
+	  }
+	}
+
+        ##-------------------
+        ##  depict rectangular of variables 
+        ##-------------------
+        ##Change the pattern when the number of variables is even (odd)
+        Rem.N.var <- N.var %% 2
+	LineWidth <- 2
+
+	y0 <- 0.9 * Window.Height
+	y1 <- y0 - Len.Rec.y / 2
+	y2 <- y0 + Len.Rec.y / 2
+
+	Offset.Rec <- Sep.Rec / 2
+	offset.num <- 1
+	NN.var <- HN.var
+	if (Rem.N.var != 0) {
+	  Offset.Rec <- Len.Rec.x/2 + Sep.Rec
+	  offset.num <- 2
+	  NN.var <- floor(HN.var)
+	}
+	# for odd case
+	if (Rem.N.var != 0) {
+          ##depict the center rectangle
+	  x1 <- x0 - Len.Rec.x/2
+	  x2 <- x0 + Len.Rec.x/2
+	  rect(x1, y1, x2, y2, lwd=LineWidth)
+	  ##depict the center label
+          if ( length(colnames(x$x)) == 0 ) {
+              text <- sprintf ("x%d", NN.var + 1)
+          } else {
+              text <- colnames(x$x)[NN.var + 1]
+              if (nchar(text) > maxStrLen ) {
+                  text <- paste0(substring(text, 1, strLen), "..")
+              }
+          }
+          if (isPDF == TRUE) {
+              par(ps=printFontSize)
+          } else {
+              par(ps=fontSize)
+          }
+	  x1 <- x0
+	  text(x1, y0, labels=text)
+          par(ps=orgFontSize)
+	}
+	if (NN.var>0) {
+	  for (i in 1:NN.var) {
+            ii <- i - 1
+            ##depict the rectangle
+	    x1 <- x0 + Offset.Rec + ii*(3/2*Len.Rec.x)
+	    x2 <- x1 + Len.Rec.x
+	    rect(x1, y1, x2, y2, lwd=LineWidth)
+
+	    x2 <- x0 - Offset.Rec - ii*(3/2*Len.Rec.x)
+	    x1 <- x2 - Len.Rec.x
+	    rect(x1, y1, x2, y2, lwd=LineWidth)
+	    ##depict the label
+	    if ( length(colnames(x$x)) == 0 ) {
+		text1 <- sprintf ("x%d", NN.var + offset.num + ii)
+		text2 <- sprintf ("x%d", NN.var - ii)
+	    } else {
+		text1 <- colnames(x$x)[NN.var + offset.num + ii]
+		text2 <- colnames(x$x)[NN.var - ii]
+                if (nchar(text1) > strLen ) {
+                    text1 <- paste0(substring(text1, 1, strLen), "..")
+                }
+                if (nchar(text2) > strLen ) {
+                    text2 <- paste0(substring(text2, 1, strLen), "..")
+                }
+	    }
+            if (isPDF == TRUE) {
+                par(ps=printFontSize)
+            } else {
+                par(ps=fontSize)
+            }
+	    x1 <- x0 + (Offset.Rec+Len.Rec.x/2) + ii*(3/2*Len.Rec.x)
+	    text(x1, y0, labels=text1)
+
+	    x1 <- x0 - (Offset.Rec+Len.Rec.x/2) - ii*(3/2*Len.Rec.x)
+	    text(x1, y0, labels=text2)
+            par(ps=orgFontSize)
+	  }
+	}
+
+        ##---------------------------
+        ##  depict the line between variables and factors
+        ##---------------------------
+	x0 <- Window.Width / 2
+	y2 <- 0.1*Window.Height + Rad.Ellipse.y/2
+	y1 <- 0.9*Window.Height - Len.Rec.y/2
+	x0.fac <- x0-(Sep.Ellipse+Rad.Ellipse.x)/2-Step.Ellipse*(NN.fac-1)
+	x0.var <- x0 - (Sep.Rec+Len.Rec.x)/2     - Step.Rec*(NN.var-1)
+	cur.lambda <- info.fanc$num.lambda
+	cur.gamma <- info.fanc$num.gamma
+	if (Rem.N.fac != 0) {
+	  x0.fac <- x0-(Sep.Ellipse+Rad.Ellipse.x)-Step.Ellipse*(NN.fac-1)
+	}
+	if (Rem.N.var != 0 ) {
+	  x0.var <- x0 - (Sep.Rec+Len.Rec.x)     - Step.Rec*(NN.var-1)
+	}
+        for (i in 1:N.var) {
+          ii <- i - 1
+	  x1 <- x0.var + ii*Step.Rec
+          for (j in 1:N.fac) {
+            jj <- j - 1
+	    x2 <- x0.fac + jj*Step.Ellipse
+
+	    val <- info.fanc$L[[cur.gamma]][[cur.lambda]][i, j]
+	    lw0 <- abs((val  * 10))
+	    LineWidth <- 0
+	    if (lw0 > 0.05 && lw0<1.5 ) {
+		LineWidth <- 1
+	    } else if (lw0 >=1.5) {
+		LineWidth <- as.integer( lw0 + 0.5 )
+	    }
+	    color <- "black"
+            if (info.fanc$L[[cur.gamma]][[cur.lambda]][i, j] < 0) {
+              color <- "red"
+            }
+	    if (LineWidth > 0) {
+		lines(c(x1, x2), c(y1, y2), col=color, lwd=LineWidth)
+	    }
+          }
+        }
+	dev.off()
+	graphics.off()
+	if ( isPDF == FALSE ) {
+	    image1 <- tcltk::tclVar()
+	    tcltk::tkimage.create("photo", image1, file=pngFileName)
+	    tcltk::tkdelete(canvas, tag="all")
+	    tcltk::tkcreate(canvas, "image",0,0,image=image1,anchor="nw")
+            file.remove(pngFileName)
+	}
+    }
+    ## --
+    cbExposeHeatmap <- function() {
+        loadings <-
+            info.fanc$L[[info.fanc$num.gamma]][[info.fanc$num.lambda]]
         loadings <- as.matrix(loadings)
         loadings  <- t(loadings)
-        loadings <- matlab::fliplr(loadings)
-        image(loadings, col=col.all, zlim=c(-max.col, max.col))
-      }
-
-      tcltk::tkconfigure(sc1, command=my.fun)
-      tcltk::tkconfigure(sc2, command=my.fun)
-
-      assign("slider.values.old", sl.defaults, envir = slider.env)
-
-      invisible(nt)
+        loadings <- fliplr.fanc(loadings)
+        #
+        Window.Width <- as.numeric(tcltk::tkwinfo("width", canvas))
+        Window.Height <- as.numeric(tcltk::tkwinfo("height", canvas))
+	# output image to temporary file
+	if ( isPDF == FALSE ) {
+            pngFileName <- uniqFilename('png')
+	    png(pngFileName, width=Window.Width, height=Window.Height)
+	} else {
+	    pdf(file=PDFFileName, width=6, height=6)
+	}
+        image(loadings, col=col.all, zlim=c(-max.col, max.col),
+		xlab="factors", ylab="variables")
+	dev.off()
+	# Convert to Tcl/Tk image and put it on the canvas
+	if ( isPDF == FALSE ) {
+	    image1 <- tcltk::tclVar()
+	    tcltk::tkimage.create("photo", image1, file=pngFileName)
+	    tcltk::tkdelete(canvas, tag="all")
+	    tcltk::tkcreate(canvas, "image", 0, 0, image=image1,
+                anchor="nw" )
+            file.remove(pngFileName)
+	}
     }
 
-    heatmap.fanc <- function (fit) {
-      N.rho <- nrow(fit$rho)
-      N.gamma <- ncol(fit$rho)
-      slider.fanc(sl.names=c("rho", "gamma"), sl.mins=c(1, 1), sl.maxs=c(N.rho, N.gamma), sl.deltas=c(1, 1), sl.defaults=c(1, 1), fit=fit)
+    cbExposeCanvas <- function() {
+        if ( fig.type == "path" ) {
+            cbExposePath()
+        } else {
+            cbExposeHeatmap()
+        }
     }
 
-    heatmap.fanc(x)
+    onChangeParam <- function (...) {
+        # rho
+        value <- as.numeric(tcltk::tclvalue(LambdaValue))
+        num.lambda <- ceiling(value * info.fanc$N.lambda)
+        if (num.lambda < 1 ) {
+            num.lambda <- 1
+        }
+        # gamma
+        value <- as.numeric(tcltk::tclvalue(GammaValue))
+        num.gamma <- ceiling(value * info.fanc$N.gamma)
+        if (num.gamma < 1) {
+            num.gamma <- 1
+        }
 
-  } else {
-    stop("Only 'path' and 'heatmap' are available for 'type'")
-  }
+        info.fanc$num.lambda <<- num.lambda
+        info.fanc$num.gamma  <<- num.gamma
+        info.fanc$lambda.current<<-info.fanc$lambdas[num.lambda, num.gamma]
+        info.fanc$gamma.current<<-info.fanc$gammas[num.gamma]
+        info.fanc$GFI.current <<- info.fanc$GFIs[num.lambda, num.gamma]
+        info.fanc$AGFI.current <<- info.fanc$AGFIs[num.lambda, num.gamma]
+        info.fanc$CFI.current <<- info.fanc$CFIs[num.lambda, num.gamma]
+        info.fanc$RMSEA.current <<- info.fanc$RMSEAs[num.lambda, num.gamma]
+        info.fanc$SRMR.current <<- info.fanc$SRMRs[num.lambda, num.gamma]
+    
+        info.fanc$AIC.current <<- info.fanc$AICs[num.lambda, num.gamma]
+        info.fanc$BIC.current <<- info.fanc$BICs[num.lambda, num.gamma]
+        info.fanc$CAIC.current <<- info.fanc$CAICs[num.lambda, num.gamma]
+        info.fanc$EBIC.current <<- info.fanc$EBICs[num.lambda, num.gamma]
+        cbExposeCanvas()
+        cbExposeLabelLambda()
+        cbExposeLabelGFI()
+        cbExposeLabelAGFI()
+        cbExposeLabelCFI()
+        cbExposeLabelRMSEA()
+        cbExposeLabelSRMR()
+        cbExposeLabelAIC()
+        cbExposeLabelBIC()
+        cbExposeLabelCAIC()
+        cbExposeLabelEBIC()
+        cbExposeLabelGamma()
+    }
+
+    onClickOverview <- function() {
+	cbExposeSubPath <- function() {
+            N.var <- info.fanc$N.var
+            N.fac <- info.fanc$N.fac
+	    window.width<-as.numeric(tcltk::tkwinfo("width", subCanvas))
+	    window.height<-as.numeric(tcltk::tkwinfo("height",subCanvas))
+	    canvas.height <- window.height/ndiv.lambda
+	    canvas.width  <- window.width/ndiv.gamma
+            #
+	    scale.x <- canvas.width / info.fanc$Window.Width
+	    scale.y <- canvas.height / info.fanc$Window.Height
+	    Rad.Ellipse.x <- info.fanc$Rad.Ellipse * scale.x * 2
+	    Rad.Ellipse.y <- info.fanc$Rad.Ellipse * scale.y
+	    Len.Rec.x <- info.fanc$Len.Rec * scale.x
+	    Len.Rec.y <- info.fanc$Len.Rec * scale.y
+
+	    Sep.Ellipse   <- info.fanc$Rad.Ellipse * scale.x / 2
+	    Step.Ellipse  <- Rad.Ellipse.x + Sep.Ellipse
+	    Sep.Rec       <- Len.Rec.x/2
+	    Step.Rec      <- Len.Rec.x + Sep.Rec
+
+	    HN.var <- N.var / 2
+	    HN.fac <- N.fac / 2
+
+	    tcltk::tkdelete(subCanvas, tag="all")
+	    for (i in 1:(ndiv.lambda-1)) {
+		yy <- i * canvas.height
+		tcltk::tkcreate(subCanvas, "line", 0, yy, window.width, yy,
+			width=2, fill="#aaaaaa")
+	    }
+	    for (i in 1:(ndiv.gamma-1)) {
+		xx <- i * canvas.width
+		tcltk::tkcreate(subCanvas, "line", xx, 0,
+			xx, window.height, width=2, fill="#aaaaaa")
+	    }
+
+	    Rem.N.fac <- N.fac %% 2
+	    Rem.N.var <- N.var %% 2
+	    NN.fac <- HN.fac
+	    if (Rem.N.fac != 0) {
+		NN.fac <- floor(HN.fac)
+	    }
+	    NN.var <- HN.var
+	    if (Rem.N.var != 0) {
+	        NN.var <- floor(HN.var)
+	    }
+	    ##-------------------
+	    ##   depict the Ellipse of factor
+	    ##-------------------
+	    LineWidth <- 1
+	    for ( i in 1:ndiv.gamma ) {
+		x0 <- (i-1)*canvas.width + canvas.width/2
+		for ( j in 1:ndiv.lambda ) {
+		    y0 <- (j-1)*canvas.height + 0.2 * canvas.height
+		    y1 <- y0 - Rad.Ellipse.y / 2
+		    y2 <- y0 + Rad.Ellipse.y / 2
+		    Offset.Ellipse <- Sep.Ellipse / 2
+		    offset.num <- 1
+		    if (Rem.N.fac != 0) {
+			offset.num <- 2
+			Offset.Ellipse <- Rad.Ellipse.x/2 + Sep.Ellipse
+		    }
+		    # for odd case
+		    if (Rem.N.fac != 0) {
+		      ##depict the center ellipse
+		      x1 <- x0 - Rad.Ellipse.x/2
+		      x2 <- x0 + Rad.Ellipse.x/2
+		      tcltk::tkcreate(subCanvas, "oval", x1, y1, x2, y2,
+			      width=LineWidth)
+		      ##depict the center label
+		      text <- sprintf ("f%d", NN.fac + 1)
+		      x1 <- x0
+		      tcltk::tkcreate(subCanvas, "text", x1, y0, text=text,
+			      anchor="center", font=fontTiny)
+		    }
+		    if (NN.fac>0) {
+		      for (ii in 1:NN.fac) {
+			iii <- ii - 1
+			##depict the ellipse
+			x1 <- x0 + Offset.Ellipse + iii*Step.Ellipse
+			x2 <- x1 + Rad.Ellipse.x
+			tcltk::tkcreate(subCanvas, "oval", x1, y1, x2, y2,
+				width=LineWidth)
+
+			x2 <- x0 - Offset.Ellipse - iii*Step.Ellipse
+			x1 <- x2 - Rad.Ellipse.x
+			tcltk::tkcreate(subCanvas, "oval", x1, y1, x2, y2,
+				width=LineWidth)
+			##depict the label
+			text <- sprintf ("f%d", NN.fac + offset.num + iii)
+			x1 <- x0 + (Offset.Ellipse+Rad.Ellipse.x/2)
+				+ iii*Step.Ellipse
+			tcltk::tkcreate(subCanvas, "text", x1, y0,
+				text=text, anchor="center", font=fontTiny)
+
+			text <- sprintf ("f%d", NN.fac - iii)
+			x1 <- x0 - (Offset.Ellipse+Rad.Ellipse.x/2)
+				- iii*Step.Ellipse
+			tcltk::tkcreate(subCanvas, "text", x1, y0,
+				text=text, anchor="center", font=fontTiny)
+		      }
+		    }
+		}
+	    }
+	    #
+	    ##-------------------
+	    ##  depict rectangular of variables 
+	    ##-------------------
+	    LineWidth <- 1
+	    for ( i in 1:ndiv.gamma ) {
+		x0 <- (i-1)*canvas.width + canvas.width/2
+		for ( j in 1:ndiv.lambda ) {
+		    y0 <- (j-1)*canvas.height + 0.9 * canvas.height
+		    y1 <- y0 - Len.Rec.y / 2
+		    y2 <- y0 + Len.Rec.y / 2
+		    Offset.Rec <- Sep.Rec / 2
+		    offset.num <- 1
+		    if (Rem.N.var != 0) {
+		      Offset.Rec <- Len.Rec.x/2 + Sep.Rec
+		      offset.num <- 2
+		    }
+		    # for odd case
+		    if (Rem.N.var != 0) {
+		      ##depict the center rectangle
+		      x1 <- x0 - Len.Rec.x/2
+		      x2 <- x0 + Len.Rec.x/2
+		      tcltk::tkcreate(subCanvas, "rectangle", x1, y1,
+			      x2, y2, width=LineWidth)
+		      ##depict the center label
+		      text <- sprintf ("x%d", NN.var + 1)
+		      x1 <- x0
+		      tcltk::tkcreate(subCanvas, "text", x1, y0, text=text,
+			      anchor="center", font=fontTiny)
+		    }
+		    if (NN.var>0) {
+		      for (ii in 1:NN.var) {
+			iii <- ii - 1
+			##depict the rectangle
+			x1 <- x0 + Offset.Rec + iii*Step.Rec
+			x2 <- x1 + Len.Rec.x
+			tcltk::tkcreate(subCanvas, "rectangle", x1, y1,
+				x2, y2, width=LineWidth)
+
+			x2 <- x0 - Offset.Rec - iii*Step.Rec
+			x1 <- x2 - Len.Rec.x
+			tcltk::tkcreate(subCanvas, "rectangle", x1, y1,
+				x2, y2, width=LineWidth)
+			##depict the label
+			text <- sprintf ("x%d", NN.var + offset.num + iii)
+			x1 <- x0 + Offset.Rec+Len.Rec.x/2 + iii*Step.Rec
+			tcltk::tkcreate(subCanvas, "text", x1, y0,
+				text=text, anchor="center", font=fontTiny)
+
+			text <- sprintf ("x%d", NN.var - iii)
+			x1 <- x0 - Offset.Rec - iii*Step.Rec - Len.Rec.x/2
+			tcltk::tkcreate(subCanvas, "text", x1, y0,
+				text=text, anchor="center", font=fontTiny)
+		      }
+		    }
+		}
+	    }
+	    ##---------------------------
+	    ##  depict the line between variables and factors
+	    ##---------------------------
+	    for ( i in 1:ndiv.gamma ) {
+		x0 <- (i-1)*canvas.width + canvas.width/2
+		for ( j in 1:ndiv.lambda ) {
+		    y2 <- (j-1)*canvas.height + 0.2*canvas.height +
+			    Rad.Ellipse.y/2
+		    y1 <- (j-1)*canvas.height + 0.9*canvas.height -
+			    Len.Rec.y/2
+		    x0.fac <- x0 - Step.Ellipse/2 - Step.Ellipse*(NN.fac-1)
+		    x0.var <- x0 - Step.Rec/2 - Step.Rec*(NN.var-1)
+		    cur.lambda <- lambda.list[j]
+		    cur.gamma <- gamma.list[i]
+		    if (Rem.N.fac != 0) {
+		      x0.fac <- x0 - Step.Ellipse*NN.fac
+		    }
+		    if (Rem.N.var != 0 ) {
+		      x0.var <- x0 - Step.Rec*NN.var
+		    }
+		    for (ii in 1:N.var) {
+		      x1 <- x0.var + (ii-1)*Step.Rec
+		      for (jj in 1:N.fac) {
+			x2 <- x0.fac + (jj-1)*Step.Ellipse
+			val<-info.fanc$L[[cur.gamma]][[cur.lambda]][ii, jj]
+			color <- "black"
+			if (val < 0) {
+			  color <- "red"
+			}
+			LineWidth <- abs(val * 5)
+			if (LineWidth > 0.025) {
+			    tcltk::tkcreate(subCanvas, "line", x1, y1,
+				    x2, y2, fill=color, width=LineWidth)
+			}
+		      }
+		    }
+		}	# for (j)
+	    }	# for (i)
+	    ##---------------------------
+	    ##  depict values of lambda and gamma
+	    ##---------------------------
+	    for ( i in 1:ndiv.gamma ) {
+		x0 <- (i-1)*canvas.width + canvas.width/2
+		for ( j in 1:ndiv.lambda ) {
+		    y0 <- (j-1)*canvas.height + 0.05*canvas.height
+		    cur.lambda <- lambda.list[j]
+		    cur.gamma  <- gamma.list[i]
+		    lambda <- info.fanc$lambdas[cur.lambda, cur.gamma]
+		    gamma <- info.fanc$gammas[cur.gamma]
+		    text <- sprintf("lambda= %.3f  gamma= %.3f",
+			lambda, gamma)
+		    tcltk::tkcreate(subCanvas, "text", x0, y0, text=text,
+			anchor="center", font=fontTiny )
+		}
+	    }
+	}	# exposeCanvas
+        cbExposeSubHeatmap <- function() {
+            N.var <- info.fanc$N.var
+            N.fac <- info.fanc$N.fac
+	    window.width<-as.numeric(tcltk::tkwinfo("width", subCanvas))
+	    window.height<-as.numeric(tcltk::tkwinfo("height",subCanvas))
+	    canvas.height <- window.height/ndiv.lambda
+	    canvas.width  <- window.width/ndiv.gamma
+            tcltk::tkdelete(subCanvas, tag="all")
+            for (i in 1:ndiv.gamma) {
+                cur.gamma <- gamma.list[i]
+                x.pos <- canvas.width * (i-1)
+                gamma <- info.fanc$gammas[cur.gamma]
+                for (j in 1:ndiv.lambda) {
+                    cur.lambda <- lambda.list[j]
+                    y.pos <- canvas.height * (j-1)
+                    lambda <- info.fanc$lambdas[cur.lambda, cur.gamma]
+                    # setting variables
+                    loadings <- info.fanc$L[[cur.gamma]][[cur.lambda]]
+                    loadings <- as.matrix(loadings)
+                    loadings  <- t(loadings)
+                    loadings <- fliplr.fanc(loadings)
+                    # title
+                    text <- sprintf("lambda= %.3f  gamma= %.3f",
+                                    lambda, gamma)
+                    # get file name
+                    tmpFile <- uniqFilename('png')
+                    png(tmpFile, width=canvas.width,
+                        height=canvas.height)
+                    image(loadings, col=col.all, main=text,
+                          zlim=c(-max.col, max.col),
+                          xlab="factors", ylab="variables")
+                    dev.off()
+                    #
+                    image1 <- tcltk::tclVar()
+                    tcltk::tkimage.create("photo", image1, file=tmpFile)
+                    tcltk::tkcreate(subCanvas, "image", x.pos, y.pos,
+                                    image=image1, anchor="nw" )
+                    file.remove(tmpFile)
+                }
+            }
+        }
+        cbExposeSubCanvas <- function() {
+            if ( fig.type == "path" ) {
+                cbExposeSubPath()
+            } else {
+                cbExposeSubHeatmap()
+            }
+        }
+	onClickDiv <- function() {
+	    if (ndiv.lambda == 5) {
+		ndiv.lambda <<- 4
+		ndiv.gamma <<- 4
+		tcltk::tkconfigure(subFrm.div, text="5x5")
+		tcltk::tktitle(subWin) <- "Overview (4x4)"
+	    } else {
+		ndiv.lambda <<- 5
+		ndiv.gamma <<- 5
+		tcltk::tkconfigure(subFrm.div, text="4x4")
+		tcltk::tktitle(subWin) <- "Overview (5x5)"
+	    }
+            if (ndiv.lambda > N.lambda) {
+                ndiv.lambda <<- N.lambda
+            }
+            if (ndiv.gamma > N.gamma) {
+                ndiv.gamma <<- N.gamma
+            }
+            cbExposeSubCanvas()
+	}
+        #-- main program of sub canvas
+	N.lambda <- info.fanc$N.lambda
+	N.gamma  <- info.fanc$N.gamma
+	ndiv.lambda <- 5
+	ndiv.gamma  <- 5
+        if (N.lambda < ndiv.lambda) {
+            ndiv.lambda <- N.lambda
+        }
+        if (N.gamma < ndiv.gamma) {
+            ndiv.gamma <- N.gamma
+        }
+	#
+	lambda.list <- vector(length=ndiv.lambda)
+	gamma.list  <- vector(length=ndiv.gamma)
+        if (ndiv.lambda == 1) {
+            lambda.list[1] <- 1
+        } else {
+            d.lambda <- (N.lambda-1) / (ndiv.lambda-1)
+            for (i in 1:ndiv.lambda) {
+                lambda.list[i] <- 1 + as.integer((i-1)*d.lambda+0.1)
+            }
+        }
+        if (ndiv.gamma == 1) {
+            gamma.list[1] <- 1
+        } else {
+            d.gamma  <- (N.gamma-1)  / (ndiv.gamma-1)
+            for (i in 1:ndiv.gamma) {
+                gamma.list[i] <- 1 + as.integer((i-1)*d.gamma+0.1)
+            }
+        }
+        #-- create sub canvas
+	subWin <- tcltk::tktoplevel()
+	title <- sprintf("Overview (%dx%d)", ndiv.lambda, ndiv.gamma)
+	tcltk::tktitle(subWin) <- title
+	subCanvas <- tcltk::tkcanvas(subWin, background="#FFFFFF")
+	tcltk::tkpack(subCanvas, expand=TRUE, fill="both")
+	tcltk::tkbind(subCanvas, "<Configure>", cbExposeSubCanvas) 
+	# some button
+	subFrm <- tcltk::tkframe(subWin)
+	subFrm.close <- tcltk::tkbutton(subFrm, text="Close",
+		width=Text.Width, padx=10,
+		command=function() tcltk::tkdestroy(subWin))
+	subFrm.div <- tcltk::tkbutton(subFrm, text="4x4",
+		width=Text.Width, padx=10, command=onClickDiv)
+	tcltk::tkpack(subFrm.close, side="right")
+	tcltk::tkpack(subFrm.div, side="right")
+	tcltk::tkpack(subFrm, side="right")
+	tcltk::tkwm.geometry(subWin, "1200x850")
+    }
+
+
+    ##-----main window to depict-----##
+    ##"info" includes 'L' and 'lambdas'.
+    ## 'L' is a p*m*r array of pattern matrices
+    ## 'lambdas' is a r*1 vector of tuning parameter
+    lambdas <- info.fanc$lambdas
+    gammas <- info.fanc$gammas
+    N.lambda <- info.fanc$N.lambda
+    N.gamma  <- info.fanc$N.gamma
+    ##the range of lambda, gamma are restricted in (0, 1)
+    ##for 'rho'
+    Min.lambda <- 0
+    Max.lambda <- 1
+    if (N.lambda == 1) {
+        Step.lambda <- 1
+    } else {
+        Step.lambda <- 1 / (N.lambda - 1)
+    }
+    ##for 'gamma'
+    Min.gamma <- 0
+    Max.gamma <- 1
+    if ( N.gamma == 1 ) {
+        Step.gamma <- 1
+    } else {
+        Step.gamma <- 1 / (N.gamma - 1)
+    }
+    #
+    LambdaValue <- tcltk::tclVar(sprintf("f", Min.lambda))
+    GammaValue  <- tcltk::tclVar(sprintf("f", Min.gamma))
+    Items <- c()
+    # font settings
+    fontNormal <- tcltk::tkfont.create( family="Courier New", size=14)
+    fontSmall <- tcltk::tkfont.create( family="Courier New", size=10)
+    fontTiny <- tcltk::tkfont.create( family="Courier New", size=8)
+
+    Window.Width <- sprintf("%d", info.fanc$Window.Width)
+    Window.Height0 <- sprintf("%d", info.fanc$Window.Height + 200)
+    Text.Width <- "16"
+
+    top <- tcltk::tktoplevel(width=Window.Width, height=Window.Height0)
+    ##-------------------
+    ##    depict the Tk canvas
+    ##-------------------
+    canvas <- tcltk::tkcanvas(top, background="#FFFFFF")
+    tcltk::tkpack(canvas, expand=TRUE, fill="both")
+    tcltk::tkbind(canvas, "<Configure>", cbExposeCanvas) 
+
+    ##-----------------------
+    ##  depict the goodness of fit indices
+    ##-----------------------
+    ##-- create master frame
+    frmAll <- tcltk::tkframe(top, width=Window.Width)
+    ##-- create frame 1 --
+    fr1 <- tcltk::tkframe(frmAll, width=Window.Width)
+    fr1.gfi   <- tcltk::tklabel(fr1, width=Text.Width, anchor="w", text="")
+    fr1.agfi  <- tcltk::tklabel(fr1, width=Text.Width, anchor="w", text="")
+    fr1.cfi   <- tcltk::tklabel(fr1, width=Text.Width, anchor="w", text="")
+    fr1.rmsea <- tcltk::tklabel(fr1, width=Text.Width, anchor="w", text="")
+    fr1.srmr  <- tcltk::tklabel(fr1, width=Text.Width, anchor="w", text="")
+    tcltk::tkpack(fr1.gfi,   side="left")
+    tcltk::tkpack(fr1.agfi,  side="left")
+    tcltk::tkpack(fr1.cfi,   side="left")
+    tcltk::tkpack(fr1.rmsea, side="left")
+    tcltk::tkpack(fr1.srmr,  side="left")
+    tcltk::tkpack(fr1)
+    ##-- create frame2 --
+    fr2 <- tcltk::tkframe(frmAll, width=Window.Width)
+    fr2.aic  <- tcltk::tklabel(fr2, width=Text.Width, anchor="w", text="" )
+    fr2.bic  <- tcltk::tklabel(fr2, width=Text.Width, anchor="w", text="" )
+    fr2.caic <- tcltk::tklabel(fr2, width=Text.Width, anchor="w", text="" )
+    fr2.ebic <- tcltk::tklabel(fr2, width=Text.Width, anchor="w", text="" )
+    fr2.dum  <- tcltk::tklabel(fr2, width=Text.Width, anchor="w", text="" )
+    tcltk::tkpack(fr2.aic,  side="left")
+    tcltk::tkpack(fr2.bic,  side="left")
+    tcltk::tkpack(fr2.caic, side="left")
+    tcltk::tkpack(fr2.ebic, side="left")
+    tcltk::tkpack(fr2.dum,  side="left")
+    tcltk::tkpack(fr2)
+
+    ##-- rho slider --
+    fr3 <- tcltk::tkframe(frmAll, width=Window.Width)
+    fr3.label <- tcltk::tklabel(fr3, width=Text.Width, anchor="w", text="")
+    fr3.scale <- tcltk::tkscale(fr3, length=250, from=Min.lambda,
+	to=Max.lambda, resolution=Step.lambda, variable=LambdaValue,
+	orient="horizontal", showvalue=0, command=onChangeParam )
+    tcltk::tkpack(fr3.label, side="left")
+    tcltk::tkpack(fr3.scale, side="left")
+    tcltk::tkpack(fr3)
+
+    ##-- gamma slider --
+    fr4 <- tcltk::tkframe(frmAll, width=Window.Width)
+    fr4.label <- tcltk::tklabel(fr4, width=Text.Width, anchor="w", text="")
+    fr4.scale <- tcltk::tkscale(fr4, length=250, from=Min.gamma,
+	to=Max.gamma, resolution=Step.gamma, variable=GammaValue,
+	orient="horizontal", showvalue=0, command=onChangeParam )
+    tcltk::tkpack(fr4.label, side="left")
+    tcltk::tkpack(fr4.scale, side="left")
+    tcltk::tkpack(fr4)
+
+    ##-- some buttons --
+    fr5 <- tcltk::tkframe(frmAll, width=Window.Width)
+    fr5.overview <- tcltk::tkbutton(fr5, text="Overview", width=Text.Width,
+	padx=10, command=onClickOverview)
+    fr5.loadings <- tcltk::tkbutton(fr5, text="Output loadings",
+	width=Text.Width, padx=10, command=onClickLoadings)
+    fr5.out <- tcltk::tkbutton(fr5, text="Output params", width=Text.Width,
+	    padx=10, command=onClickOut)
+    fr5.pdf <- tcltk::tkbutton(fr5, text="PDF", width=Text.Width,
+	    padx=20, command=onClickPDF)
+    tcltk::tkpack(fr5.loadings, side="right")
+    tcltk::tkpack(fr5.overview, side="right")
+    tcltk::tkpack(fr5.out,      side="right")
+    tcltk::tkpack(fr5.pdf,      side="right")
+    tcltk::tkpack(fr5, side="right")
+
+    tcltk::tkpack(frmAll, fill="x")
+    tcltk::tkwm.geometry(top, "900x650")
+
+    if(x$type == "MC" || x$type == NULL ){
+	tcltk::tktitle(top) <- "Factor analysis with MC+"
+    } else if (x$type == "prenet" ) {
+	tcltk::tktitle(top) <- "Factor analysis with prenet"
+    }
+}
+
+fliplr.fanc <- function(x){
+    m <- ncol(x)
+    x[,m:1]
 }

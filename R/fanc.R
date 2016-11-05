@@ -1,21 +1,81 @@
 fanc <- function(
-  x, factors, n.obs, cor.factor=FALSE, normalize=TRUE, rho.max, covmat,
-  control=list())
+  x, factors, n.obs, rho, gamma, cor.factor=FALSE, normalize=TRUE, normalize.penalty=FALSE, covmat, 
+  type="MC", control=list())
 {
+
+   ## Check error
+ if (!missing(rho)) {
+    if (!is.matrix(rho)){
+      if(length(rho)==1){
+        rho <- rep(rho, ifelse(missing(gamma), 9, length(gamma)))
+        rho <- as.matrix(rho)
+        rho <- t(rho)
+        }else{
+          stop('"rho" must be a matrix')
+        }
+    }
+    if(nrow(rho)>1) rho <- apply(rho,2,function(x) sort(x, decreasing = TRUE))
+    missingrho <- FALSE
+  }else{
+    rho <- NA
+    missingrho <- TRUE
+  }
+if(!missing(gamma)){
+  missinggamma <- FALSE
+  gamma <- sort(gamma,decreasing=TRUE)
+}
+if(missing(gamma)){
+  gamma <- NA
+  missinggamma <- TRUE
+}
+if(sum(is.finite(gamma)==0) == 0 && type=="MC") warning('The maximum value of "gamma" should be "Inf"')
+
+#missingw <- missing(w)
+#if(missingw){
+  if(normalize.penalty){
+    if(missing(x)){
+      if(eigen(covmat)$values[nrow(covmat)] > 1e-15){
+        w <- 1/apply(factanal(covmat=covmat,factors=factors)$loadings,1, function(x) (sum(x^2))) #OK!!!!
+      }else{
+        fit.unnormalized <- fanc(covmat=covmat, factors=factors, rho=0, gamma=Inf, cor.factor=FALSE, normalize=normalize, type="MC")
+        w <- 1/apply(fit.unnormalized$loadings[[1]][[1]], 1, function(x) (sum(x^2))) #OK!!!!
+        #print(w)
+      }
+    }else{
+      if(ncol(x) < nrow(x)) w <- 1/apply(factanal(x,factors)$loadings,1, function(x) (sum(x^2))) #OK!!!!
+      if(ncol(x) >= nrow(x)){
+        fit.unnormalized <- fanc(x, factors, rho=0, gamma=Inf, cor.factor=FALSE, normalize=normalize, type="MC")
+        w <- 1/apply(fit.unnormalized$loadings[[1]][[1]], 1, function(x) (sum(x^2))) #OK!!!!
+        #print(w)
+      }
+    }
+    w <- w / mean(w)
+  }else{
+      if(missing(x)) w <- rep(1,ncol(covmat))
+      else w <- rep(1,ncol(x))
+  }
+#}
+
   ## Organize control parameters
   con <- list(
-    tol.em=1e-5, tol.cd=1e-5, tol.bfgs=1e-5, min.uniquevar=0.005,
-    eta=0, zita=0, Delta=1e-5, init.coef=seq(0.3, 2, length=10),
-    rho.max=ifelse(missing(rho.max), NA, rho.max),
-    max.gamma=100, min.gamma=1.01,
-    length.rho=30, length.gamma=9,
+    tol.em=1e-8, tol.cd=1e-8, tol.bfgs=1e-8, min.uniquevar=0.005,
+    eta=0, zita=0, Delta=0.001, init.coef=seq(0.3, 2, length=10),
+    #max.rho=ifelse(missing(max.rho), NA, max.rho),
+    w=w,
+    max.rho=NA,
+    rho=rho,
+    gamma=gamma,
+    max.gamma=ifelse(type=="MC", 100, 1),
+    min.gamma=ifelse(type=="MC", 1.01, 0.0001),     
+    length.rho=ifelse(missingrho, 30, nrow(rho)), 
+    length.gamma=ifelse(missinggamma, 9, length(gamma)), 
+    alpha.powerseq=0.5,
     maxit.em=10000, maxit.cd=500, maxit.bfgs=500,
     cor.factor=cor.factor, min.rhozero=FALSE,
-    start="warm", ncand.initial=10, pmax_for_S=500, 
+    start="warm", ncand.initial=10, ncand.initial.prenet=100, pmax_for_S=500, 
     maxit.initial=500,  
     progress=FALSE, openmp=FALSE, num.threads=0, gamma.ebic=1)
   con[names(control)] <- control
-    
   ## Check error
   if (!missing(x)) {
     if (!is.matrix(x))
@@ -31,6 +91,9 @@ fanc <- function(
     if (factors < 1 || factors >= ncol(covmat))
       stop('"factors" must be a positive integer less than the number of variables.')
   }
+  if (factors == 1 && type=="prenet") stop('1-factor model cannot be estimated when "prenet" is used.')
+  if (type!="MC" && type!="prenet" )
+    stop('"type" must be "MC" or "prenet".')
   if (con$length.gamma < 1)
     stop('"length.gamma" in control must be a positive integer.')
   if (!missing(n.obs)) {
@@ -41,20 +104,38 @@ fanc <- function(
     stop('"cor.factor"  must be logical.')
   if (con$length.rho < 1)
     stop('"length.rho" in control must be a positive integer.')
-  if (!missing(rho.max)) {
-    if (rho.max <= 0)
-      stop('"rho.max"  must be a positive real value.')
-    if (rho.max > 8.25)
-      warning('"rho.max" is greater than 8.25. In such cases, the reparametrization of the penalty funcion may be failed')
+  if (!missingrho) {
+    if(sum(rho<0)>0) stop('The value of "rho" must not be negative')
+    if(ncol(con$rho) != con$length.gamma) stop('The number of column of "rho" must be equal to the length of "gamma".')
   }
-  if (con$min.gamma <= 1)
-    stop('"min.gamma" in control must be a real value greater than 1.')
+  if (!missinggamma) {
+    if(type=="MC" && sum(gamma<=1)>0) stop('The value of "gamma" must be greater than 1')
+    if(type=="prenet" && (sum(gamma>1)>0 || sum(gamma<=0)>0)) stop('The value of "gamma" must be in (0,1]')
+  }
+  if (!is.na(con$max.rho)) {
+    if(type=="MC"){
+      if (con$max.rho <= 0) stop('"max.rho"  must be a positive real value.')
+      if (con$max.rho > 8.25) warning('"max.rho" is greater than 8.25. In such cases, the reparametrization of the penalty funcion may be failed')
+    }
+    if(type=="prenet"){
+      if (length(con$max.rho) != con$length.gamma) stop('"max.rho"  must be a vector. The length of "max.rho"  must be equal to the length of gamma.')
+      if (sum(con$max.rho <= 0) > 0) stop('The elements of "max.rho"  must be positive real values.')
+    }
+  }
+  if (con$min.gamma <= 1 && type=="MC")
+    stop('"min.gamma" in control must be greater than 1.')
+  if (con$min.gamma <= 0 && type=="prenet")
+    stop('"min.gamma" in control must be greater than 0.')
+  if (con$max.gamma > 1 && type=="prenet")
+    stop('"min.gamma" in control must be smaller or equal to 1.')
   if (con$max.gamma <= con$min.gamma)
     stop('"max.gamma"  must be a real value greater than min.gamma.')
   if (con$eta < 0)
     stop('"eta"  must be a non-negative real vaule.')
   if (con$ncand.initial < 1)
     stop('"ncand.initial" in control must be a positive integer.')
+  if (con$ncand.initial.prenet< 1)
+    stop('"ncand.initial.prenet" in control must be a positive integer.')
   if (con$maxit.em < 1)
     stop('"maxit.em" in control must be a positive integer.')
   if (con$maxit.cd < 1)
@@ -95,11 +176,15 @@ fanc <- function(
   con$zita <- as.double(con$zita)
   con$Delta <- as.double(con$Delta)
   con$init.coef <- as.double(con$init.coef)
-  con$rho.max <- as.double(con$rho.max)
+  con$rho <- as.double(con$rho)
+  con$gamma <- as.double(con$gamma)
+  con$max.rho <- as.double(con$max.rho)
   con$max.gamma <- as.double(con$max.gamma)
   con$min.gamma <- as.double(con$min.gamma)
+  con$w <- as.double(con$w)
   con$length.rho <- as.integer(con$length.rho)
   con$length.gamma <- as.integer(con$length.gamma)
+  con$alpha.powerseq <- as.double(con$alpha.powerseq)
   con$maxit.em <- as.integer(con$maxit.em)
   con$maxit.cd <- as.integer(con$maxit.cd)
   con$maxit.bfgs <- as.integer(con$maxit.bfgs)
@@ -107,6 +192,7 @@ fanc <- function(
   con$min.rhozero <- as.integer(con$min.rhozero)
   con$start <- as.character(con$start)
   con$ncand.initial <- as.integer(con$ncand.initial)
+  con$ncand.initial.prenet <- as.integer(con$ncand.initial.prenet)
   con$pmax_for_S <- as.integer(con$pmax_for_S)
   #con$trace <- as.logical(con$trace)
   con$maxit.initial <- as.integer(con$maxit.initial)
@@ -136,10 +222,13 @@ fanc <- function(
     x <- x[1 : N, 1 : p] / sqrt(N)
   }
 
+  if(type=="MC") type_i <- 1
+  if(type=="prenet") type_i <- 2
+
   ## Run
   rslt <- .Call("RextCall_fanc",
                 as.integer(p), as.integer(factors), as.integer(N),
-                as.double(covmat), as.double(x), con)
+                as.double(covmat), as.double(x), as.integer(type_i), con)
 
   ## Convert Lambda to dgCMatrix
   rslt$loadings <- vector("list", con$length.gamma)
@@ -152,8 +241,8 @@ fanc <- function(
                      x=rslt$spv.loadings[[ri, gi]], dims=c(p, factors))
     }
   }
-  rslt$spi.loadings <- NULL
-  rslt$spv.loadings <- NULL
+  #rslt$spi.loadings <- NULL
+  #rslt$spv.loadings <- NULL
   
   ## Convert fanc format (pivot diag.Psi and logF table, aggregate conv)
   rslt$uniquenesses <- array(apply(rslt$uniquenesses, 3, t),
@@ -161,6 +250,7 @@ fanc <- function(
   rslt$likelihood <- array(apply(rslt$likelihood, 3, t),
                            dim=dim(rslt$likelihood)[c(2, 1, 3)])
   rslt$convergence <- rowSums(matrix(rslt$convergence, 3))
+  rslt$type <- type
 
   ## Attach rownames and colnames
   names.gamma <- paste("gamma", 1 : con$length.gamma, sep="")

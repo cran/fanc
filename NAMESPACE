@@ -1,5 +1,8 @@
 useDynLib("fanc")
+
+#import(ellipse)
 import(Matrix)
+#import(tcltk)
 
 
 export(fanc)
@@ -11,6 +14,9 @@ export(out)
 importFrom("grDevices", "rgb")
 importFrom("stats", "cov", "var")
 importFrom("utils", "install.packages")
+importFrom("grDevices", "dev.off", "graphics.off", "pdf", "png")
+importFrom("graphics", "lines", "par", "plot", "rect")
+importFrom("stats", "factanal", "runif")
 
 S3method("plot","fanc")
 S3method("print","fanc")

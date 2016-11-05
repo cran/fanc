@@ -14,7 +14,7 @@ print.fanc=function(x,digits = max(3, getOption("digits") - 3),num.result = 20,.
 		
 		 rho <- x$rho
 		 gamma <- x$gamma
-		 colnames(rho) <- sapply(gamma,function(x) sprintf('%3.3f',x))
+		 colnames(rho) <- sapply(gamma,function(x) sprintf('%3.4f',x))
 		 df <- x$df[,1]
 		 rho0 <- cbind(df,rho)
 		 colnames(rho0) <- c("df",colnames(rho))

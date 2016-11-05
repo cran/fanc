@@ -1,7 +1,8 @@
 select <- function(x, criterion=c("BIC","AIC","CAIC","EBIC"), gamma,  scores=FALSE, df.method="active"){
 	if(class(x)!="fanc") stop('the class of object "x" must be "fanc"')
 	if(!missing(gamma)){
-		if(gamma<=1) stop("gamma must be greater than 1")
+		if(gamma<=1 && x$type == "MC") stop("gamma must be greater than 1")
+		if(gamma>1 && x$type == "prenet") stop("gamma must be smaller than or equal to 1")
 	}
 	if(scores==TRUE && is.null(x$x)==TRUE) stop("Data matrix is needed for computing the factor score in fitting procedure by fanc")
 	if(is.null(x$AIC)==TRUE) stop("The model selection criterion was not able to be calculated. Data matrix or the number of observations is needed in fitting procedure by fanc.")

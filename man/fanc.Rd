@@ -9,8 +9,8 @@ fanc (penalized maximum likelihood factor analysis via nonconvex penalties)
 This package computes the solution path of penalized maximum likelihood estimates via MC+ penalties.  
 }
 \usage{
-fanc(x, factors, n.obs, cor.factor=FALSE, normalize = TRUE, rho.max, covmat, 
-control=list())}
+fanc(x, factors, n.obs, rho, gamma, cor.factor=FALSE, normalize=TRUE, 
+     normalize.penalty=FALSE, covmat, type="MC", control=list())}
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{x}{
@@ -25,14 +25,23 @@ An indicator of the factor correlation.  If \code{"TRUE"}, the factor correlatio
   \item{normalize}{
 If \code{"TRUE"}, each variable is normalized, otherwise it is left alone.
 }
-  \item{rho.max}{
-Maximum value of rho.
+  \item{normalize.penalty}{
+If \code{"TRUE"}, the penalty term for each variable has a weight so that the loading matrix is normalized.
+}
+  \item{rho}{
+The values of rho.  It can be a scalar or a matrix.  
+}
+  \item{gamma}{
+The values of gamma.  It must be a vector.
 }
   \item{covmat}{
 A covariance matrix, which is needed if the data matrix \code{"x"} is not available.
 }
   \item{n.obs}{
 The number of observations, which is needed to calculate the model selection criteria and goodness-of-fit indices when the data matrix \code{"x"} is not available.
+}
+  \item{type}{
+Type of penalty. If \code{"MC"}, the MC penalty is used. If \code{"prenet"}, the prenet penalty is used. Default is \code{"MC"}.
 }
  \item{control}{A list of control parameters. See \sQuote{Details}.}
 }
@@ -46,6 +55,9 @@ Candidates of tuning parameters which is used for grid search of reparametrizati
   \item{\code{length.gamma}}{
 A length of tuning parameter which controls sparsenesses.  For each \code{rho}, \code{gamma=Inf} yields soft threshold operator (i.e., lasso penalty) and \code{gamma=+1} produces hard threshold operator.
 }
+  \item{max.rho}{
+Maximum value of rho.
+}
   \item{\code{max.gamma}}{
 A maximum value of gamma (excludes \code{Inf}.).
 }
@@ -57,6 +69,9 @@ A tuning parameter used for preventing the occurrence of improper solutions.  \c
 }
   \item{\code{ncand.initial}}{
 The number of candidates of initial values of factor loadings. 
+}
+  \item{\code{ncand.initial.prenet}}{
+The number of candidates of initial values for prenet penalty.  Because the prenet penalty is unstable when \code{rho} is large, \code{ncand.initial.prenet} must be large. Default is 1000.
 }
   \item{\code{maxit.em}}{
 A maximum number of iterations for EM algortihm. 
