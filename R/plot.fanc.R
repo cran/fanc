@@ -41,7 +41,7 @@
 
 ##plot.fanc
 ##modified the cancidates of lambda as gamma varies
-plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="reparametrization", ...){
+plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...){
 
     # check ellipse library
     if(nchar(system.file(package="ellipse")) == 0){
@@ -295,7 +295,7 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="reparametriza
     onClickOut <- function() {
 	lambda.current <- info.fanc$lambda.current
 	gamma.current <- info.fanc$gamma.current
-	print(out(x, rho=lambda.current, gamma=gamma.current))
+	print(out(x, rho=lambda.current, gamma=gamma.current, df.method=df.method))
     }
 
     ##callback function for value-changed signal of GtkScale widget
@@ -464,6 +464,7 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="reparametriza
 	  offset.num <- 2
 	  NN.var <- floor(HN.var)
 	}
+    #par(family="Hiragino Maru Gothic ProN W4") # for Japanese
 	# for odd case
 	if (Rem.N.var != 0) {
           ##depict the center rectangle
@@ -748,14 +749,12 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="reparametriza
 				width=LineWidth)
 			##depict the label
 			text <- sprintf ("f%d", NN.fac + offset.num + iii)
-			x1 <- x0 + (Offset.Ellipse+Rad.Ellipse.x/2)
-				+ iii*Step.Ellipse
+			x1 <- x0 + (Offset.Ellipse+Rad.Ellipse.x/2) + iii*Step.Ellipse
 			tcltk::tkcreate(subCanvas, "text", x1, y0,
 				text=text, anchor="center", font=fontTiny)
 
 			text <- sprintf ("f%d", NN.fac - iii)
-			x1 <- x0 - (Offset.Ellipse+Rad.Ellipse.x/2)
-				- iii*Step.Ellipse
+			x1 <- x0 - (Offset.Ellipse+Rad.Ellipse.x/2)	- iii*Step.Ellipse
 			tcltk::tkcreate(subCanvas, "text", x1, y0,
 				text=text, anchor="center", font=fontTiny)
 		      }
@@ -1111,7 +1110,7 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="reparametriza
     tcltk::tkpack(frmAll, fill="x")
     tcltk::tkwm.geometry(top, "900x650")
 
-    if(x$type == "MC" || x$type == NULL ){
+    if(x$type == "MC"){
 	tcltk::tktitle(top) <- "Factor analysis with MC+"
     } else if (x$type == "prenet" ) {
 	tcltk::tktitle(top) <- "Factor analysis with prenet"

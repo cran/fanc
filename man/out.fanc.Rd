@@ -9,7 +9,7 @@ output from a "fanc" object for fixed value of gamma.
 This functions give us the loadings from a "fanc" object for fixed value of gamma.  
 }
 \usage{
-out(x, rho, gamma, scores=FALSE, df.method="reparametrization")
+out(x, rho, gamma, scores=FALSE, df.method="active")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

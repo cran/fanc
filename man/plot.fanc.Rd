@@ -20,7 +20,7 @@ plot the solution path from a "fanc" object.
 This functions plots the solution paths from a "fanc" object for fixed value of gamma.  
 }
 \usage{
-\method{plot}{fanc}(x, Window.Height=500, type=NULL, df.method="reparametrization", ...)
+\method{plot}{fanc}(x, Window.Height=500, type=NULL, df.method="active", ...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

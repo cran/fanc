@@ -156,8 +156,11 @@ static void inv(int n, double *mat, double *O_inv_mat, int *O_info) {
 
 static double logseq(int n, double a, double b, double *arr) {
 	double log_a = log(a), log_b = log(b);
-	for (int i = 0; i < n; i++) {
-		arr[i] = exp((log_b - log_a) * i / (n - 1) + log_a);
+	if(n == 1) arr[0] = a;
+	if(n > 1){
+		for (int i = 0; i < n; i++) {
+			arr[i] = exp((log_b - log_a) * i / (n - 1) + log_a);
+		}
 	}
 	return 0; 
 }
@@ -179,8 +182,11 @@ static double hinv(double y, double alpha) {
 
 static double powerseq(int n, double a, double b, double alpha, double *arr) {
 	double h_a = h(a, alpha), h_b = h(b, alpha);
-	for (int i = 0; i < n; i++) {
-		arr[i] = hinv((h_b - h_a) * i / (n - 1) + h_a, alpha);
+	if(n == 1) arr[0] = a;
+	if(n > 1){
+		for (int i = 0; i < n; i++) {
+			arr[i] = hinv((h_b - h_a) * i / (n - 1) + h_a, alpha);
+		}
 	}
 	return 0; 
 }
