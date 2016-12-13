@@ -1,8 +1,8 @@
 Package: fanc
 Type: Package
 Title: Penalized Likelihood Factor Analysis via Nonconvex Penalty
-Version: 2.1
-Date: 2016-10-17
+Version: 2.2
+Date: 2016-12-12
 Author: Kei Hirose, Michio Yamamoto, Haruhisa Nagata
 Maintainer: Kei Hirose <mail@keihirose.com>
 Depends: Matrix
@@ -12,7 +12,7 @@ License: GPL (>= 2)
 URL: http://link.springer.com/article/10.1007%2Fs11222-014-9458-0,
         http://www.sciencedirect.com/science/article/pii/S0167947314001510,
         http://www.keihirose.com
-Packaged: 2016-11-08 03:17:35 UTC; hirosekei
+Packaged: 2016-12-12 14:32:18 UTC; hirosekei
 Repository: CRAN
-Date/Publication: 2016-11-08 10:56:51
+Date/Publication: 2016-12-13 07:57:08
 NeedsCompilation: yes

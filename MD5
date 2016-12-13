@@ -1,8 +1,8 @@
-a486156ae6ce1247f778d55c8014376d *DESCRIPTION
+5c69dee44de7dd203d1bf17a2bd9789f *DESCRIPTION
 1628b94851b06fffe83c4f72b0d3b068 *NAMESPACE
 1c6662bdaa3af093d6cd312dbbbd5145 *R/fanc.R
 9dc94e6da97e66e1b73fc1a7894a6eed *R/out.fanc.R
-03ffdb933da907c1e5137835fca84623 *R/plot.fanc.R
+8a89bca70d8f2663d890d9c419200fcc *R/plot.fanc.R
 da67f95e7c188fe0cc07cd3f9639e793 *R/print.fanc.R
 c1b5bb095a29bd2a6d635c95342ce10e *R/select.fanc.R
 88ffc0cd90a7e7509cbc97700583ae67 *man/fanc.Rd

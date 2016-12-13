@@ -620,16 +620,18 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...)
     onChangeParam <- function (...) {
         # rho
         value <- as.numeric(tcltk::tclvalue(LambdaValue))
-        num.lambda <- ceiling(value * info.fanc$N.lambda)
+        num.lambda <- value + 1
         if (num.lambda < 1 ) {
             num.lambda <- 1
         }
+        
         # gamma
         value <- as.numeric(tcltk::tclvalue(GammaValue))
-        num.gamma <- ceiling(value * info.fanc$N.gamma)
+        num.gamma <- value + 1
         if (num.gamma < 1) {
             num.gamma <- 1
         }
+        
 
         info.fanc$num.lambda <<- num.lambda
         info.fanc$num.gamma  <<- num.gamma
@@ -1004,22 +1006,14 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...)
     ##the range of lambda, gamma are restricted in (0, 1)
     ##for 'rho'
     Min.lambda <- 0
-    Max.lambda <- 1
-    if (N.lambda == 1) {
-        Step.lambda <- 1
-    } else {
-        Step.lambda <- 1 / (N.lambda - 1)
-    }
+    Max.lambda <- N.lambda - 1
+    Step.lambda <- 1
     ##for 'gamma'
     Min.gamma <- 0
-    Max.gamma <- 1
-    if ( N.gamma == 1 ) {
-        Step.gamma <- 1
-    } else {
-        Step.gamma <- 1 / (N.gamma - 1)
-    }
-    #
-    LambdaValue <- tcltk::tclVar(sprintf("f", Min.lambda))
+    Max.gamma <- N.gamma - 1
+    Step.gamma <- 1
+
+LambdaValue <- tcltk::tclVar(sprintf("f", Min.lambda))
     GammaValue  <- tcltk::tclVar(sprintf("f", Min.gamma))
     Items <- c()
     # font settings
