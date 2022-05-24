@@ -1,7 +1,6 @@
 \name{fanc}
 \alias{fanc}
 \alias{print.fanc}
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 fanc (penalized maximum likelihood factor analysis via nonconvex penalties)
 }
@@ -10,8 +9,7 @@ This package computes the solution path of penalized maximum likelihood estimate
 }
 \usage{
 fanc(x, factors, n.obs, rho, gamma, cor.factor=FALSE, normalize=TRUE, 
-     normalize.penalty=FALSE, covmat, type="MC", control=list())}
-%- maybe also 'usage' for other objects documented here.
+     normalize.penalty=FALSE, covmat, type="MC", model="FA", control=list())}
 \arguments{
   \item{x}{
 A data matrix.
@@ -41,7 +39,10 @@ A covariance matrix, which is needed if the data matrix \code{"x"} is not availa
 The number of observations, which is needed to calculate the model selection criteria and goodness-of-fit indices when the data matrix \code{"x"} is not available.
 }
   \item{type}{
-Type of penalty. If \code{"MC"}, the MC penalty is used. If \code{"prenet"}, the prenet penalty is used. Default is \code{"MC"}.
+Type of penalty. If \code{"MC"}, the MC penalty is used. If \code{"prenet"}, the prenet penalty is used. If \code{"enet"}, the elastic penalty is used. Default is \code{"MC"}.
+}
+  \item{model}{
+Type of model. \code{"FA"}, the factor analysis model is used. If \code{"PPCA"}, the probabilistic principal component analysis is conducted. In the PPCA, the unique variances have the same value.  Default is \code{"FA"}. 
 }
  \item{control}{A list of control parameters. See \sQuote{Details}.}
 }
@@ -145,8 +146,6 @@ A positive scalar giving the tolerance at which the factor correlation in BFGS a
 }
 
 \references{
-%% ~put references to the literature/web site here ~
-%Friedman, J. (2008).  Fast sparse regression and classification. \eqn{Technical report}, Standford University.\cr
 Hirose, K. and Yamamoto, M. (2014). 
 \emph{Sparse estimation via nonconcave penalized likelihood in a factor analysis model},\cr
   \emph{Statistics and Computing, in press}
@@ -155,12 +154,6 @@ Hirose, K. and Yamamoto, M. (2014).
 Kei Hirose\cr
 \email{mail@keihirose.com}
 }
-
-%\note{
-%  ~~further notes~~
-%}
-
-% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{\code{out} and \code{plot.fanc} objects.}
 \examples{
@@ -184,8 +177,8 @@ out(fit, rho=0.1, gamma=Inf)
 #select a model via model selection criterion
 select(fit, criterion="BIC", gamma=Inf)
 
+\donttest{
 #plot solution path
-#plot(fit)
+plot(fit)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
+}

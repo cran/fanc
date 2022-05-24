@@ -1,8 +1,8 @@
-useDynLib("fanc")
+useDynLib("fanc", .registration = TRUE)
 
-#import(ellipse)
+import(ellipse)
 import(Matrix)
-#import(tcltk)
+import(tcltk)
 
 
 export(fanc)

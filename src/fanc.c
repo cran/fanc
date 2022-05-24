@@ -3,6 +3,7 @@
 //	Authors: K. Hirose, M. Yamamoto, H. Nagata
 // ---------------------------------------------------------
 
+#define USE_FC_LEN_T
 #include <math.h>
 #include <stdlib.h>
 #include <R.h>
@@ -17,6 +18,10 @@
 	#include "zeroin.h"
 //}
 
+#ifndef FCONE
+# define FCONE
+#endif
+
 struct ctrl_fanc_t {
 	double tol_EM, tol_CD, tol_Psi, tol_Phi, eta, zita, delta;
 	double *init_coef, *rhos, *gammas, *max_rho, max_gamma, min_gamma, gamma_ebic, *w;
@@ -25,7 +30,7 @@ struct ctrl_fanc_t {
 	int maxit_EM, maxit_CD, maxit_Phi;
 	int cor_factor, use_penalty, zero_min_rho;
 	int cold_init, num_iter_init, num_iter_init_prenet, p_max_for_S;
-	int progress, omp, num_threads;
+	int progress, omp, num_threads, model;
 };
 
 struct logF_value_t {
@@ -129,7 +134,7 @@ static double logdet(int n, double *mat, int *O_info) {
 	double *eigval = (double *)R_alloc(n, sizeof(double));
 	F77_CALL(dcopy)(&nn, mat, INC_SEQ, tmp, INC_SEQ);
 	F77_CALL(dsyev)(
-		JOBZ_VAL, UPLO_UPPER, &n, tmp, &n, eigval, work, &lwork, &info);
+		JOBZ_VAL, UPLO_UPPER, &n, tmp, &n, eigval, work, &lwork, &info FCONE FCONE);
 	
 	// Calculate log(det(mat))
 	double logdet = 0;
@@ -293,9 +298,9 @@ static double optimfn_logF_Phi(int mm, double *Phi, void *ex0) {
 	double *inv_Phi_A = (double *)R_alloc(mm, sizeof(double));
 	inv(m, Phi, inv_Phi, NULL);
 	F77_CALL(dgemm)(
-		TRANS_N, TRANS_N, &m, &m, &m,
+		"N", "N", &m, &m, &m,
 		&D_ONE, inv_Phi, &m, A, &m,
-		&D_ZERO, inv_Phi_A, &m);
+		&D_ZERO, inv_Phi_A, &m FCONE FCONE);
 	
 	// Calculate tr(inv(Phi) %*% A)
 	double tr_inv_Phi_A = 0;
@@ -332,13 +337,13 @@ static void optimgr_logF_Phi(int mm, double *Phi, double *gr, void *ex0) {
 	double *inv_Phi_A_inv_Phi = (double *)R_alloc(mm, sizeof(double));
 	inv(m, Phi, inv_Phi, NULL);
 	F77_CALL(dgemm)(
-		TRANS_N, TRANS_N, &m, &m, &m,
+		"N", "N", &m, &m, &m,
 		&D_ONE, inv_Phi, &m, A, &m,
-		&D_ZERO, inv_Phi_A, &m);
+		&D_ZERO, inv_Phi_A, &m FCONE FCONE);
 	F77_CALL(dgemm)(
-		TRANS_N, TRANS_N, &m, &m, &m,
+		"N", "N", &m, &m, &m,
 		&D_ONE, inv_Phi_A, &m, inv_Phi, &m,
-		&D_ZERO, inv_Phi_A_inv_Phi, &m);
+		&D_ZERO, inv_Phi_A_inv_Phi, &m FCONE FCONE);
 	
 	// Calculate gradients
 	for (int i = 0; i < m - 1; i++) {
@@ -446,8 +451,8 @@ static void calculate_M_A_B(
 		F77_CALL(dcopy)(&mm, Im, INC_SEQ, M, INC_SEQ);
 	}
 	F77_CALL(dsyrk)(
-		UPLO_UPPER, TRANS_T,
-		&m, &p, &D_ONE, sqrt_inv_Psi_Lambda, &p, &D_ONE, M, &m);
+		UPLO_UPPER, "T",
+		&m, &p, &D_ONE, sqrt_inv_Psi_Lambda, &p, &D_ONE, M, &m FCONE FCONE);
 	for (int i = 0; i < m - 1; i++) {
 		for (int j = i + 1; j < m; j++) {
 			M[j + i * m] = M[i + j * m];
@@ -459,37 +464,37 @@ static void calculate_M_A_B(
 	double *inv_Psi_Lambda_inv_M = (double *)R_alloc(pm, sizeof(double));
 	inv(m, M, inv_M, NULL);
 	F77_CALL(dgemm)(
-		TRANS_N, TRANS_N, &p, &m, &m,
+		"N", "N", &p, &m, &m,
 		&D_ONE, inv_Psi_Lambda, &p, inv_M, &m,
-		&D_ZERO, inv_Psi_Lambda_inv_M, &p);
+		&D_ZERO, inv_Psi_Lambda_inv_M, &p FCONE FCONE);
 	
 	if (p <= N) {
 		// B <- t(C) %*% S, A <- t(C) %*% S %*% C
 		F77_CALL(dgemm)(
-			TRANS_T, TRANS_N, &m, &p, &p,
+			"T", "N", &m, &p, &p,
 			&D_ONE, inv_Psi_Lambda_inv_M, &p, S, &p,
-			&D_ZERO, B, &m);
+			&D_ZERO, B, &m FCONE FCONE);
 		F77_CALL(dcopy)(&mm, inv_M, INC_SEQ, A, INC_SEQ);
 		F77_CALL(dgemm)(
-			TRANS_N, TRANS_N, &m, &m, &p,
+			"N", "N", &m, &m, &p,
 			&D_ONE, B, &m, inv_Psi_Lambda_inv_M, &p,
-			&D_ONE, A, &m);
+			&D_ONE, A, &m FCONE FCONE);
 	} else {
 		// D <- t(C) %*% t(X), B <- D %*% X, A <- D %*% t(D) + inv(M)
 		double *D = (double *)R_alloc(Nm, sizeof(double));
 		F77_CALL(dgemm)(
-			TRANS_T, TRANS_T, &m, &N, &p,
+			"T", "T", &m, &N, &p,
 			&D_ONE, inv_Psi_Lambda_inv_M, &p, X, &N,
-			&D_ZERO, D, &m);
+			&D_ZERO, D, &m FCONE FCONE);
 		F77_CALL(dgemm)(
-			TRANS_N, TRANS_N, &m, &p, &N,
+			"N", "N", &m, &p, &N,
 			&D_ONE, D, &m, X, &N,
-			&D_ZERO, B, &m);
+			&D_ZERO, B, &m FCONE FCONE);
 		F77_CALL(dcopy)(&mm, inv_M, INC_SEQ, A, INC_SEQ);
 		F77_CALL(dgemm)(
-			TRANS_N, TRANS_T, &m, &m, &N,
+			"N", "T", &m, &m, &N,
 			&D_ONE, D, &m, D, &m,
-			&D_ONE, A, &m);
+			&D_ONE, A, &m FCONE FCONE);
 	}
 	
 	vmaxset(vmax);
@@ -497,7 +502,7 @@ static void calculate_M_A_B(
 
 static void update_Lambda_i(
 	int p, int m, int m2, int i, double *Lambda, double *diag_Psi,
-	double *A, double *B, double rho, double gamma, struct ctrl_fanc_t *ctrl,
+	double *A, double *B, double rho, double gamma, int type, struct ctrl_fanc_t *ctrl,
 	double *O_Lambda_new, int *O_conv)
 {
 	double Lambda_i_buf1[m], Lambda_i_buf2[m];
@@ -524,8 +529,13 @@ static void update_Lambda_i(
 			double w = diag_Psi[i] / A[j + j * m];
 			double wrho = rho * w;
 			double wgamma = gamma / w;
-			
-			Lambda_i_new[j] = S_MC(z,wrho,wgamma);
+
+			if(type==1) Lambda_i_new[j] = S_MC(z,wrho,wgamma);
+			if(type==3) {
+				double beta_enet = 1.0 + wrho * (1.0 - gamma);
+				Lambda_i_new[j] = S_MC(z/beta_enet, wrho*gamma/beta_enet, R_PosInf);
+			}
+
 		}
 		
 		// Check convergence
@@ -608,6 +618,7 @@ static void update_Psi(
 	struct ctrl_fanc_t *ctrl,
 	double *O_diag_Psi_new)
 {
+	double tmp = 0.0;
 	for (int i = 0; i < p; i++) {
 		double A_Lambda_A = 0, B_Lambda = 0;
 		for (int j = 0; j < m; j++) {
@@ -617,9 +628,18 @@ static void update_Psi(
 					A[k + j * m] * Lambda[i + k * p] * Lambda[i + j * p];
 			}
 		}
-		O_diag_Psi_new[i] = dmax(
-			(1 + ctrl->eta) * S[i + i * p] - 2 * B_Lambda + A_Lambda_A, 
-			ctrl->tol_Psi);
+		if(ctrl->model == 1){
+			O_diag_Psi_new[i] = dmax(
+				(1 + ctrl->eta) * S[i + i * p] - 2 * B_Lambda + A_Lambda_A, 
+				ctrl->tol_Psi);
+		}else{
+			tmp += (1 + ctrl->eta) * S[i + i * p] - 2 * B_Lambda + A_Lambda_A;
+		}
+	}
+	if(ctrl->model == 2){
+		for (int i = 0; i < p; i++){
+			O_diag_Psi_new[i] = tmp / p;
+		}
 	}
 }
 
@@ -644,7 +664,7 @@ static void calculate_logF(
 	calculate_M_A_B(
 		p, m, N, Lambda, diag_Psi, Phi, S, X, Im, cor_factor, ctrl, M, A, B);
 	F77_CALL(dgemm)(
-		TRANS_N, TRANS_N, &m, &m, &m, &D_ONE, M, &m, A, &m, &D_ZERO, MA, &m);
+		"N", "N", &m, &m, &m, &D_ONE, M, &m, A, &m, &D_ZERO, MA, &m FCONE FCONE);
 	
 	// Calculate log-likelihood (log(det(Sigma)) + tr(Sigma^{-1}S))
 	double logF = 0;
@@ -660,7 +680,7 @@ static void calculate_logF(
 	// Calculate penalty
 	double penalty = 0;
 	if(type==1){
-			for (int i = 0; i < pm; i++) {
+		for (int i = 0; i < pm; i++) {
 			if (rho == 0) {
 				// pass
 			} else if (fabs(Lambda[i]) < rho * gamma) {
@@ -670,10 +690,7 @@ static void calculate_logF(
 				penalty += rho * rho * gamma / 2;
 			}
 		}
-		for (int i = 0; i < p; i++) {
-			penalty += ctrl->eta * S[i + i * p] * (1 / diag_Psi[i]) / 2;
-		}
-	}else{
+	}else if(type==2){
 		for (int i = 0; i < p; i++){
 			for (int k = 0; k < m-1; k++){
 				for (int l = k+1; l < m; l++){
@@ -682,8 +699,21 @@ static void calculate_logF(
 				}
 			}
 		}
+	}else if(type==3){
+		for (int i = 0; i < pm; i++) {
+			penalty += rho * (gamma  * fabs(Lambda[i]) + (1 - gamma) * Lambda[i] * Lambda[i] / 2);
+		}
+	}
+
+	// Penalty for psi
+	for (int i = 0; i < p; i++) {
+		penalty += ctrl->eta * S[i + i * p] * (1 / diag_Psi[i]) / 2;
 	}
 	
+	// Penalty for phi
+	if (cor_factor) penalty += -ctrl->zita * logdet(m, Phi, NULL);
+	
+
 	O_logF->logF = logF;
 	O_logF->penalty = 2 * penalty;
 	O_logF->logF_pen = logF + 2 * penalty;
@@ -751,8 +781,8 @@ static void minimize_logF_Lambda_Psi_Phi(
 	#pragma omp parallel for num_threads(ctrl->num_threads) if(ctrl->omp)
 	#endif
 				for (int i = 0; i < p; i++) {
-					if(type==1) update_Lambda_i(
-						p, m, m2, i, Lambda, diag_Psi, A, B, rho, gamma, ctrl,
+					if(type==1 || type==3) update_Lambda_i(
+						p, m, m2, i, Lambda, diag_Psi, A, B, rho, gamma, type, ctrl,
 						Lambda_new, &O_conv[1]);
 
 					if(type==2) update_Lambda_i_prenet(
@@ -765,9 +795,9 @@ static void minimize_logF_Lambda_Psi_Phi(
 				inv(m, A, inv_A, NULL);
 				
 				// Calculate Lambda <- t(B) %*% inv(A)
-				F77_CALL(dgemm)(TRANS_T, TRANS_N, &p, &m, &m,
+				F77_CALL(dgemm)("T", "N", &p, &m, &m,
 					&D_ONE, B, &m, inv_A, &m,
-					&D_ZERO, Lambda_new, &p);
+					&D_ZERO, Lambda_new, &p FCONE FCONE);
 				for (int i = m2 * p; i < pm; i++) {
 					Lambda_new[i] = Lambda_init[i];
 				}
@@ -904,22 +934,25 @@ static void minimize_logF_Lambda_Psi_Phi(
 	for (int i = 0; i < pm; i++) {
 		if (fabs(Lambda[i]) < ctrl->tol_EM) Lambda[i] = 0;
 	}
-	for (int j = 0; j < m; j++) {
-		int nzidx = -1;
-		for (int i = 0; i < p && nzidx != -2; i++) {
-			if (Lambda[i + j * p] != 0) {
-				nzidx = nzidx == -1 ? i : -2;
+	//For only MC penalty (prenet penalty does not always decrease the penalized log-likelihood function with the following step!!)
+	if(type==1){
+		for (int j = 0; j < m; j++) {
+			int nzidx = -1;
+			for (int i = 0; i < p && nzidx != -2; i++) {
+				if (Lambda[i + j * p] != 0) {
+					nzidx = nzidx == -1 ? i : -2;
+				}
 			}
-		}
-		if (nzidx >= 0) {
-			int all_zero = 1;
-			for (int i = 0; i < m && all_zero; i++) {
-				if (i != j && Phi[i + j * m] != 0) all_zero = 0;
-			}
-			if (all_zero) {
-				diag_Psi[nzidx] +=
-					Lambda[nzidx + j * p] * Lambda[nzidx + j * p];
-				Lambda[nzidx + j * p] = 0;
+			if (nzidx >= 0) {
+				int all_zero = 1;
+				for (int i = 0; i < m && all_zero; i++) {
+					if (i != j && Phi[i + j * m] != 0) all_zero = 0;
+				}
+				if (all_zero) {
+					diag_Psi[nzidx] +=
+						Lambda[nzidx + j * p] * Lambda[nzidx + j * p];
+					Lambda[nzidx + j * p] = 0;
+				}
 			}
 		}
 	}
@@ -1319,11 +1352,11 @@ static void calculate_Sigma(
 	// Sigma <- Lambda %*% Phi %*% t(Lambda) + Psi
 	double *LambdaPhi = (double *)R_alloc(p * m, sizeof(double));
 	F77_CALL(dgemm)(
-		TRANS_N, TRANS_N, &p, &m, &m,
-		&D_ONE, Lambda, &p, Phi, &m, &D_ZERO, LambdaPhi, &p);
+		"N", "N", &p, &m, &m,
+		&D_ONE, Lambda, &p, Phi, &m, &D_ZERO, LambdaPhi, &p FCONE FCONE);
 	F77_CALL(dgemm)(
-		TRANS_N, TRANS_T, &p, &p, &m,
-		&D_ONE, LambdaPhi, &p, Lambda, &p, &D_ZERO, O_Sigma, &p);
+		"N", "T", &p, &p, &m,
+		&D_ONE, LambdaPhi, &p, Lambda, &p, &D_ZERO, O_Sigma, &p FCONE FCONE);
 	for (int i = 0; i < p; i++) {
 		O_Sigma[i + i * p] += diag_Psi[i];
 	}
@@ -1344,8 +1377,8 @@ static double calculate_GFI(
 	// inv(Sigma) %*% S
 	double *inv_Sigma_S = (double *)R_alloc(pp, sizeof(double));
 	F77_CALL(dgemm)(
-		TRANS_N, TRANS_N, &p, &p, &p,
-		&D_ONE, inv_Sigma, &p, S, &p, &D_ZERO, inv_Sigma_S, &p);
+		"N", "N", &p, &p, &p,
+		&D_ONE, inv_Sigma, &p, S, &p, &D_ZERO, inv_Sigma_S, &p FCONE FCONE);
 
 	double sumsq = dsumsq(pp, inv_Sigma_S);
 	double tr = trace(p, inv_Sigma_S);
@@ -1490,8 +1523,10 @@ static void fanc(
 		if(type[0]==1){
 			gammas[0] = R_PosInf;
 			logseq(num_gammas - 1, ctrl->max_gamma, ctrl->min_gamma, gammas + 1);
-		}else{
+		}else if(type[0]==2){
 			logseq(num_gammas, ctrl->max_gamma, ctrl->min_gamma, gammas);
+		}else if(type[0]==3){
+			seq(num_gammas, ctrl->max_gamma, ctrl->min_gamma, gammas);
 		}
 	}else{
 		F77_CALL(dcopy)(&num_gammas, ctrl->gammas, INC_SEQ, gammas, INC_SEQ);
@@ -1499,22 +1534,23 @@ static void fanc(
 
 	//determine maxim value of rho
 	if(ISNAN_max_rho){
-		if(type[0]==1){
+		if(type[0]==1 || type[0]==3){
 			max_rho[0] = 0.0;
 		}
 		if(type[0]==2){
 			dfill(num_gammas, max_rho, 0.0);
 		}
 	}else{
-		if(type[0]==1) F77_CALL(dcopy)(&I_ONE, ctrl->max_rho, INC_SEQ, max_rho, INC_SEQ);
+		if(type[0]==1 || type[0]==3) F77_CALL(dcopy)(&I_ONE, ctrl->max_rho, INC_SEQ, max_rho, INC_SEQ);
 		if(type[0]==2) F77_CALL(dcopy)(&num_gammas, ctrl->max_rho, INC_SEQ, max_rho, INC_SEQ);
 	}
 
 	// Calculate initial parameters
 	if (ISNAN_max_rho || !ctrl->cold_init) {
-		if(type[0]==1){
+		if(type[0]==1 || type[0]==3){
 			init_params_warm(
-			p, m, N, S, X, Im, type[0], ctrl, 
+			p, m, N, S, X, Im, 1, ctrl, 
+			//p, m, N, S, X, Im, type[0], ctrl, 
 			Lambda_init, diag_Psi_init, 
 			max_rho, ISNAN_max_rho, O_conv);
 			F77_CALL(dcopy)(&mm, Im, INC_SEQ, Phi_init, INC_SEQ);
@@ -1524,6 +1560,13 @@ static void fanc(
 			&m2, Lambda_init, diag_Psi_init, Phi_init,
 			max_rho, ISNAN_max_rho, O_conv);
 			m2_init_prenet = m2;
+		}
+		if(type[0]==3){
+			if(num_gammas>1){
+				for (int gi = 1; gi < num_gammas; gi++) {
+					max_rho[gi] = max_rho[0] / gammas[gi];
+				}
+			}			
 		}
 
 	}
@@ -1542,7 +1585,7 @@ static void fanc(
 			"the reparametrization of the penalty funcion may be failed");
 	}
 	if (!ctrl->cold_init) {
-		if(type[0]==1) m2 = 1;
+		if(type[0]==1 || type[0]==3) m2 = 1;
 		if(type[0]==2) m2 = m2_init_prenet;
 		F77_CALL(dcopy)(&pm, Lambda_init, INC_SEQ, Lambda, INC_SEQ);
 		F77_CALL(dcopy)(&p, diag_Psi_init, INC_SEQ, diag_Psi, INC_SEQ);
@@ -1567,17 +1610,21 @@ static void fanc(
 						&(struct ex_zeroin_rho_t){gammas[gi], rhos_tmp[ri]});
 				}
 			}
-			if (ctrl->zero_min_rho) {
-				for (int gi = 0; gi < num_gammas; gi++) {
-					rhos[(num_rhos - 1) + gi * num_rhos] = 0;
-				}
-			}			
-		}else{
+		}else if(type[0]==2){
 			for (int gi = 0; gi < num_gammas; gi++) {
-				if(type[0]==1) logseq(num_rhos, max_rho[gi], max_rho[gi] * ctrl->delta, rhos + num_rhos * gi);
-				if(type[0]==2) powerseq(num_rhos, max_rho[gi], max_rho[gi] * ctrl->delta * sqrt(gammas[gi]), ctrl->alpha_powerseq, rhos + num_rhos * gi);
+				//if(type[0]==1) logseq(num_rhos, max_rho[gi], max_rho[gi] * ctrl->delta, rhos + num_rhos * gi);
+				powerseq(num_rhos, max_rho[gi], max_rho[gi] * ctrl->delta * sqrt(gammas[gi]), ctrl->alpha_powerseq, rhos + num_rhos * gi);
+			}
+		}else if(type[0]==3) {
+			for (int gi = 0; gi < num_gammas; gi++) {
+				logseq(num_rhos, max_rho[gi], max_rho[gi] * ctrl->delta, rhos + num_rhos * gi);
 			}
 		}
+		if (ctrl->zero_min_rho) {
+			for (int gi = 0; gi < num_gammas; gi++) {
+				rhos[(num_rhos - 1) + gi * num_rhos] = 0;
+			}
+		}			
 	}else{
 		int num_gammas_rhos = num_rhos * num_gammas;
 		F77_CALL(dcopy)(&num_gammas_rhos, ctrl->rhos, INC_SEQ, rhos, INC_SEQ);
@@ -1620,13 +1667,13 @@ static void fanc(
 				F77_CALL(dcopy)(
 					&mm, O_Phi + (ri + (gi - 1) * num_rhos) * mm,
 					INC_SEQ, Phi, INC_SEQ);
-			} else if (ri == 0 && type[0]==2) {
+			} else if (ri == 0 && (type[0]==2 || type[0]==3)) {
 				F77_CALL(dcopy)(&pm, Lambda_init, INC_SEQ, Lambda, INC_SEQ);
 				F77_CALL(dcopy)(&p, diag_Psi_init, INC_SEQ, diag_Psi, INC_SEQ);
 				F77_CALL(dcopy)(&mm, Phi_init, INC_SEQ, Phi, INC_SEQ);
 			}else if (F77_CALL(dnrm2)(&pm, Lambda, &I_ONE) < ctrl->tol_EM) {
 				// Reinitialize when Lambda is zero matrix
-				if(type[0]==1) m2 = 1;
+				if(type[0]==1 || type[0]==3) m2 = 1;
 				if(type[0]==2) m2 = m2_init_prenet;
 				F77_CALL(dcopy)(&pm, Lambda_init, INC_SEQ, Lambda, INC_SEQ);
 				F77_CALL(dcopy)(&p, diag_Psi_init, INC_SEQ, diag_Psi, INC_SEQ);
@@ -1643,7 +1690,7 @@ static void fanc(
 			&m2, Lambda, diag_Psi, Phi, &logF, conv);
 		
 		// Check if the number of factors should be extended
-		if (m2 < m && ((type[0]==1 && gi == 0) || type[0]==2)) {
+		if (m2 < m && ((type[0]==1 && gi == 0) || type[0]==2 || type[0]==3)) {
 			int m2_full;
 			struct logF_value_t logF_full;
 			
@@ -1700,10 +1747,17 @@ static void fanc(
 		O_logF[2 + rgi * 3] = logF.logF_pen;
 		
 		// Calculate df
-		if (gi == 0) df_base[ri] = p + nonzero;
+		if (gi == 0){
+			if(ctrl->model == 1) df_base[ri] = p + nonzero;
+			if(ctrl->model == 2) df_base[ri] = 1 + nonzero;
+		}
 		int c = ctrl->cor_factor ? m2 * (m2 - 1) / 2 : 0;
 		double df = (O_df[rgi] = df_base[ri] + c);
-		int df_nonzero = (O_dfnonzero[rgi] = nonzero + p + c);
+		int df_nonzero;
+		if(ctrl->model == 1) df_nonzero  = nonzero + p + c;
+		if(ctrl->model == 2) df_nonzero  = nonzero + 1 + c;
+
+		O_dfnonzero[rgi] = df_nonzero;
 
 		// Calculate Goodness-of-fit indices
 		if (p <= ctrl->p_max_for_S) {
@@ -1799,7 +1853,8 @@ SEXP RextCall_fanc(
 		INTEGER(get_list_element(R_ctrl, "pmax_for_S"))[0],
 		INTEGER(get_list_element(R_ctrl, "progress"))[0],
 		INTEGER(get_list_element(R_ctrl, "openmp"))[0],
-		INTEGER(get_list_element(R_ctrl, "num.threads"))[0]
+		INTEGER(get_list_element(R_ctrl, "num.threads"))[0],
+		INTEGER(get_list_element(R_ctrl, "model"))[0]
 	};
 	int num_rhos = ctrl.num_rhos;
 	int num_gammas = ctrl.num_gammas;
@@ -1867,7 +1922,7 @@ SEXP RextCall_fanc(
 	fanc(p, m, N, REAL(R_S), REAL(R_X), &ctrl, 
 		REAL(R_rhos), REAL(R_gammas), INTEGER(R_m2), 
 		INTEGER(R_spn_Lambda), spi_Lambda, spv_Lambda, 
-		INTEGER(R_type), //type=1 -> MC, type=2 -> prenet
+		INTEGER(R_type), //type=1 -> MC, type=2 -> prenet, type=3 -> enet
 		REAL(R_diag_Psi), REAL(R_Phi), REAL(R_logF), 
 		REAL(R_df), REAL(R_BIC), REAL(R_BICH), REAL(R_EBIC),
 		REAL(R_AIC), REAL(R_CAIC), REAL(R_GFI), REAL(R_AGFI),

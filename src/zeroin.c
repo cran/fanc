@@ -1,3 +1,4 @@
+#define USE_FC_LEN_T
 #include <float.h>
 
 double dabs(double a) {

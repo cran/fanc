@@ -1,5 +1,6 @@
 out <- function(x, rho, gamma, scores=FALSE, df.method="active"){
-	if(class(x)!="fanc") stop('the class of object "x" must be "fanc"')
+	if(!inherits(x,"fanc")) stop('the class of object "x" must be "fanc"')
+	#if(class(x)!="fanc") stop('the class of object "x" must be "fanc"')
 	 if(scores==TRUE && is.null(x$x)==TRUE) stop("Data matrix is needed for computing the factor score in fitting procedure by fanc")
 	 
 	 gamma_vec <- x$gamma

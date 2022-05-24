@@ -2,6 +2,7 @@
  *  - 2013/10/08
  *  - Haruhisa Nagata 
  */
+#define USE_FC_LEN_T
 
 #include <math.h>
 #include <stdint.h>

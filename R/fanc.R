@@ -1,6 +1,6 @@
 fanc <- function(
   x, factors, n.obs, rho, gamma, cor.factor=FALSE, normalize=TRUE, normalize.penalty=FALSE, covmat, 
-  type="MC", control=list())
+  type="MC", model="FA", control=list())
 {
 
    ## Check error
@@ -66,9 +66,9 @@ if(sum(is.finite(gamma)==0) == 0 && type=="MC") warning('The maximum value of "g
     rho=rho,
     gamma=gamma,
     max.gamma=ifelse(type=="MC", 100, 1),
-    min.gamma=ifelse(type=="MC", 1.01, 0.0001),     
+    min.gamma=ifelse(type=="MC", 1.01, ifelse(type=="prenet", 0.0001, 0.1)),     
     length.rho=ifelse(missingrho, 30, nrow(rho)), 
-    length.gamma=ifelse(missinggamma, 9, length(gamma)), 
+    length.gamma=ifelse(missinggamma, ifelse(type=="enet",10,9), length(gamma)), 
     alpha.powerseq=0.5,
     maxit.em=10000, maxit.cd=500, maxit.bfgs=500,
     cor.factor=cor.factor, min.rhozero=FALSE,
@@ -92,8 +92,12 @@ if(sum(is.finite(gamma)==0) == 0 && type=="MC") warning('The maximum value of "g
       stop('"factors" must be a positive integer less than the number of variables.')
   }
   if (factors == 1 && type=="prenet") stop('1-factor model cannot be estimated when "prenet" is used.')
-  if (type!="MC" && type!="prenet" )
-    stop('"type" must be "MC" or "prenet".')
+  if (type!="MC" && type!="prenet" && type!="enet" )
+    stop('"type" must be "MC", "prenet" or "enet".')
+  if (model!="FA" && model!="PPCA" )
+    stop('"model" must be "FA" or "PPCA".')
+  if(model=="FA") model_i <- 1
+  if(model=="PPCA") model_i <- 2
   if (con$length.gamma < 1)
     stop('"length.gamma" in control must be a positive integer.')
   if (!missing(n.obs)) {
@@ -110,23 +114,25 @@ if(sum(is.finite(gamma)==0) == 0 && type=="MC") warning('The maximum value of "g
   }
   if (!missinggamma) {
     if(type=="MC" && sum(gamma<=1)>0) stop('The value of "gamma" must be greater than 1')
-    if(type=="prenet" && (sum(gamma>1)>0 || sum(gamma<=0)>0)) stop('The value of "gamma" must be in (0,1]')
+    if(type=="prenet" || type=="enet"){
+      if (sum(gamma>1)>0 || sum(gamma<=0)>0) stop('The value of "gamma" must be in (0,1]')
+    }
   }
   if (!is.na(con$max.rho)) {
     if(type=="MC"){
       if (con$max.rho <= 0) stop('"max.rho"  must be a positive real value.')
       if (con$max.rho > 8.25) warning('"max.rho" is greater than 8.25. In such cases, the reparametrization of the penalty funcion may be failed')
     }
-    if(type=="prenet"){
+    if(type=="prenet" || type=="enet" ){
       if (length(con$max.rho) != con$length.gamma) stop('"max.rho"  must be a vector. The length of "max.rho"  must be equal to the length of gamma.')
       if (sum(con$max.rho <= 0) > 0) stop('The elements of "max.rho"  must be positive real values.')
     }
   }
   if (con$min.gamma <= 1 && type=="MC")
     stop('"min.gamma" in control must be greater than 1.')
-  if (con$min.gamma <= 0 && type=="prenet")
+  if (con$min.gamma <= 0 && (type=="prenet" || type=="enet"))
     stop('"min.gamma" in control must be greater than 0.')
-  if (con$max.gamma > 1 && type=="prenet")
+  if (con$max.gamma > 1 && (type=="prenet" || type=="enet"))
     stop('"min.gamma" in control must be smaller or equal to 1.')
   if (con$max.gamma <= con$min.gamma)
     stop('"max.gamma"  must be a real value greater than min.gamma.')
@@ -165,7 +171,7 @@ if(sum(is.finite(gamma)==0) == 0 && type=="MC") warning('The maximum value of "g
   if (!is.logical(con$openmp))
     stop('"openmp" in control must be logical.')
   if (con$openmp && con$num.threads == 0) {
-    con$num.threads <- parallel::detectCores()
+    con$num.threads <- 1 #parallel::detectCores()
   }
 
   con$tol.em <- as.double(con$tol.em)
@@ -199,6 +205,8 @@ if(sum(is.finite(gamma)==0) == 0 && type=="MC") warning('The maximum value of "g
   con$progress <- as.integer(con$progress)
   con$openmp <- as.integer(con$openmp)
   con$num.threads <- as.integer(con$num.threads)
+  con$model <- as.integer(model_i)
+
 
   ## Prepare data
   missing.x <- missing(x)
@@ -224,6 +232,8 @@ if(sum(is.finite(gamma)==0) == 0 && type=="MC") warning('The maximum value of "g
 
   if(type=="MC") type_i <- 1
   if(type=="prenet") type_i <- 2
+  if(type=="enet") type_i <- 3
+
 
   ## Run
   rslt <- .Call("RextCall_fanc",
@@ -251,6 +261,7 @@ if(sum(is.finite(gamma)==0) == 0 && type=="MC") warning('The maximum value of "g
                            dim=dim(rslt$likelihood)[c(2, 1, 3)])
   rslt$convergence <- rowSums(matrix(rslt$convergence, 3))
   rslt$type <- type
+  rslt$model <- model
 
   ## Attach rownames and colnames
   names.gamma <- paste("gamma", 1 : con$length.gamma, sep="")

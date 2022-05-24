@@ -43,32 +43,37 @@
 ##modified the cancidates of lambda as gamma varies
 plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...){
 
-    # check ellipse library
-    if(nchar(system.file(package="ellipse")) == 0){
-        msg <- paste0("The package 'ellipse' is required to plot ",
-            "the solution path.\n",
-            "Do you want to install 'ellipse' now? (y/n)")
-        answer <- readline(msg)
-      if(answer=="y"){
-        install.packages("ellipse")
-        if (nchar(system.file(package="ellipse")) == 0) stop('The package "ellipse" was not able to be installed')
-      } else {
-        stop("The plot was terminated.")
-      }
-    }
-    requireNamespace("ellipse", quietly=TRUE)
-    # check tcltk library
-    if(nchar(system.file(package="tcltk")) == 0){
-     answer <- readline("The package 'tcltk' is required to plot the solution path. \nDo you want to install 'tcltk' now?  (y/n)")
-      if(answer=="y"){
-          install.packages("tcltk")
-          if (nchar(system.file(package="tcltk")) == 0) stop('The package "tcltk" was not able to be installed')
-      }else{
-          stop("The plot was terminated.")
-      }
-    }
-    requireNamespace("tcltk", quietly=TRUE)
+    ## check ellipse library
+    #if(nchar(system.file(package="ellipse")) == 0){
+    #    msg <- paste0("The package 'ellipse' is required to plot ",
+    #        "the solution path.\n",
+    #        "Do you want to install 'ellipse' now? (y/n)")
+    #    answer <- readline(msg)
+    #  if(answer=="y"){
+    #    install.packages("ellipse")
+    #    if (nchar(system.file(package="ellipse")) == 0) stop('The package "ellipse" was not able to be installed')
+    #  } else {
+    #    stop("The plot was terminated.")
+    #  }
+    #}
+    #requireNamespace("ellipse", quietly=TRUE)
+    ## check tcltk library
+    #if(nchar(system.file(package="tcltk")) == 0){
+    # answer <- readline("The package 'tcltk' is required to plot the solution path. \nDo you want to install 'tcltk' now?  (y/n)")
+    #  if(answer=="y"){
+    #      install.packages("tcltk")
+    #      if (nchar(system.file(package="tcltk")) == 0) stop('The package "tcltk" was not able to be installed')
+    #  }else{
+    #      stop("The plot was terminated.")
+    #  }
+    #}
+    #requireNamespace("tcltk", quietly=TRUE)
     
+
+       old.par <- par(no.readonly = TRUE) # all par settings which
+                                      # could be changed.
+   on.exit(par(old.par))
+
     # check plot type
     fig.type <- ""
     if (identical(type, "path") ||
@@ -84,7 +89,7 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...)
         #
         fig.type <- "path"
     } else if (identical(type, "heatmap") ||
-               (is.null(type) && dim(x$x)[2] >= 50)) {
+               (is.null(type) && dim(x$loadings[[1]][[1]])[1] >= 50)) {
         fig.type <- "heatmap"
     } else {
         stop("Only 'path' and 'heatmap' are available for 'type'")
@@ -374,6 +379,7 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...)
 	    png(filename=pngFileName, width=Window.Width,
 		height=Window.Height)
 	}
+par(ask=F)
 	plot(NULL, NULL, xlim=c(0,Window.Width), ylim=c(Window.Height,0),
 	    axes=FALSE, ann=FALSE)
         ##-------------------
@@ -869,7 +875,7 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...)
 		    cur.gamma  <- gamma.list[i]
 		    lambda <- info.fanc$lambdas[cur.lambda, cur.gamma]
 		    gamma <- info.fanc$gammas[cur.gamma]
-		    text <- sprintf("lambda= %.3f  gamma= %.3f",
+		    text <- sprintf("rho= %.3f  gamma= %.3f",
 			lambda, gamma)
 		    tcltk::tkcreate(subCanvas, "text", x0, y0, text=text,
 			anchor="center", font=fontTiny )
@@ -898,7 +904,7 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...)
                     loadings  <- t(loadings)
                     loadings <- fliplr.fanc(loadings)
                     # title
-                    text <- sprintf("lambda= %.3f  gamma= %.3f",
+                    text <- sprintf("rho= %.3f  gamma= %.3f",
                                     lambda, gamma)
                     # get file name
                     tmpFile <- uniqFilename('png')
@@ -1013,8 +1019,8 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...)
     Max.gamma <- N.gamma - 1
     Step.gamma <- 1
 
-LambdaValue <- tcltk::tclVar(sprintf("f", Min.lambda))
-    GammaValue  <- tcltk::tclVar(sprintf("f", Min.gamma))
+LambdaValue <- tcltk::tclVar(sprintf("%f", Min.lambda))
+    GammaValue  <- tcltk::tclVar(sprintf("%f", Min.gamma))
     Items <- c()
     # font settings
     fontNormal <- tcltk::tkfont.create( family="Courier New", size=14)
@@ -1104,10 +1110,17 @@ LambdaValue <- tcltk::tclVar(sprintf("f", Min.lambda))
     tcltk::tkpack(frmAll, fill="x")
     tcltk::tkwm.geometry(top, "900x650")
 
-    if(x$type == "MC"){
-	tcltk::tktitle(top) <- "Factor analysis with MC+"
-    } else if (x$type == "prenet" ) {
-	tcltk::tktitle(top) <- "Factor analysis with prenet"
+    if(x$type == "MC" && x$model == "FA"){
+    tcltk::tktitle(top) <- "Factor analysis with MC+"
+    }
+    if(x$type == "prenet" && x$model == "FA") {
+    tcltk::tktitle(top) <- "Factor analysis with prenet"
+    }
+    if(x$type == "MC" && x$model == "PPCA"){
+    tcltk::tktitle(top) <- "Probabilistic PCA with MC+"
+    }
+    if(x$type == "prenet" && x$model == "PPCA") {
+    tcltk::tktitle(top) <- "Probabilistic PCA with prenet"
     }
 }
 

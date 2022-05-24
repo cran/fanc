@@ -1,5 +1,6 @@
 select <- function(x, criterion=c("BIC","AIC","CAIC","EBIC"), gamma,  scores=FALSE, df.method="active"){
-	if(class(x)!="fanc") stop('the class of object "x" must be "fanc"')
+	if(!inherits(x,"fanc")) stop('the class of object "x" must be "fanc"')
+	#if(class(x)!="fanc") stop('the class of object "x" must be "fanc"')
 	if(!missing(gamma)){
 		if(gamma<=1 && x$type == "MC") stop("gamma must be greater than 1")
 		if(gamma>1 && x$type == "prenet") stop("gamma must be smaller than or equal to 1")
