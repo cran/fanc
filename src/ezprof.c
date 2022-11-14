@@ -13,7 +13,7 @@
 #include <Rinternals.h>
 #include "ezprof.h"
 
-uint64_t get_nanotime() {
+uint64_t get_nanotime(void) {
 //	struct timespec ts;
 //	return clock_gettime(CLOCK_MONOTONIC, &ts) == 0 ?
 //		(uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec : (uint64_t)-1;

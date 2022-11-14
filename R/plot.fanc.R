@@ -354,7 +354,7 @@ plot.fanc <- function (x, Window.Height=500, type=NULL, df.method="active", ...)
 	par(oma=c(0, 0, 0, 0))
 	par(omi=c(0, 0, 0, 0))
 	par(xpd=NA)
-	dev.off()
+	#dev.off()
 	if ( isPDF == TRUE ) {
 	    aspect <- Window.Width / Window.Height
 	    if ( aspect > 1.417 ) {
@@ -575,7 +575,7 @@ par(ask=F)
           }
         }
 	dev.off()
-	graphics.off()
+	#graphics.off()
 	if ( isPDF == FALSE ) {
 	    image1 <- tcltk::tclVar()
 	    tcltk::tkimage.create("photo", image1, file=pngFileName)

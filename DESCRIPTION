@@ -1,8 +1,8 @@
 Package: fanc
 Type: Package
 Title: Penalized Likelihood Factor Analysis via Nonconvex Penalty
-Version: 2.3.5
-Date: 2022-05-21
+Version: 2.3.9
+Date: 2022-10-20
 Authors@R: 
     c(person(given = "Kei",
              family = "Hirose",
@@ -23,9 +23,9 @@ URL: https://doi.org/10.1007/s11222-014-9458-0,
         https://doi.org/10.1016/j.csda.2014.05.011,
         https://doi.org/10.1007/s41237-016-0007-3,
         https://keihirose.com
-Packaged: 2022-05-21 10:30:49 UTC; hirosekei
+Packaged: 2022-11-08 08:27:40 UTC; hirosekei
 Repository: CRAN
-Date/Publication: 2022-05-24 09:50:06 UTC
+Date/Publication: 2022-11-15 00:20:02 UTC
 NeedsCompilation: yes
 Author: Kei Hirose [aut, cre] (<https://orcid.org/0000-0001-9827-0356>),
   Michio Yamamoto [aut],

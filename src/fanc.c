@@ -43,6 +43,7 @@ struct logF_value_t {
 
 int g_report_flag = 0;
 #define REPIF(b) ((g_report_flag & (b)) == (b))
+/*
 static void print_dmat(int nrow, int step, int ncol, double *x) {
 	for (int i = 0; i < nrow; i++) {
 		for (int j = 0; j < ncol; j++) {
@@ -51,7 +52,7 @@ static void print_dmat(int nrow, int step, int ncol, double *x) {
 		Rprintf("\n");
 	}
 }
-
+*/
 struct ezprof_t g_ezprof_, *g_ezprof = &g_ezprof_;
 
 // ---------------------------------------------------------
@@ -880,7 +881,7 @@ static void minimize_logF_Lambda_Psi_Phi(
         }
         dfill(pm - j2 * p, Lambda_new + j2 * p, 0);
 
-       int j = 0;
+       //int j = 0;
         if(m2 != j2){
             F77_CALL(dcopy)(&mm, Phi_new, INC_SEQ, Phi_tmp, INC_SEQ);
             F77_CALL(dcopy)(&mm, Im, INC_SEQ, Phi_new, INC_SEQ);
