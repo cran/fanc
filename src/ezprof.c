@@ -52,9 +52,9 @@ void ezprof_stop(struct ezprof_t *prof, int index) {
 void ezprof_print(struct ezprof_t *prof) {
 	for (int i = 0; i < prof->n; i++) {
 		if (prof->name[i] == NULL || strcmp(prof->name[i], "") == 0) {
-			Rprintf("%8.3fsec: %d\n", prof->time[i], i + 1);
+			Rprintf("%8.3fsec: %d\n", (double)(prof->time[i]), i + 1);
 		} else {
-			Rprintf("%8.3fsec: %s\n", prof->time[i], prof->name[i]);
+			Rprintf("%8.3fsec: %s\n", (double)(prof->time[i]), prof->name[i]);
 		}
 	}
 }

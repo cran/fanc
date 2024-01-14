@@ -1,4 +1,4 @@
-e972f6813cd5c7d3e7736288971476fd *DESCRIPTION
+0ca1335e001348fccb1c22b7a1efce63 *DESCRIPTION
 9c59eb96db95c8292c7192cb61bc1972 *NAMESPACE
 dac7ad4f7716d73dc782368cf8093a0e *R/fanc.R
 bb08c869d16cb596ba868dd74ac8179b *R/out.fanc.R
@@ -10,7 +10,7 @@ bc67152337ca509dd01fe90b3e6a863d *R/select.fanc.R
 403fe1742bd04c711babb2d18a1708fe *man/plot.fanc.Rd
 8d61dc53f7ac10cb03111e7c581c3dc7 *man/select.fanc.Rd
 b4227b295db8b1d1466c95675f04bf9f *src/Makevars
-a8824c6e21627db80109a6281c500f12 *src/ezprof.c
+5652f728ac791ea34a432087b999e415 *src/ezprof.c
 ebc9b680d9836413a7a41e63b079ff56 *src/ezprof.h
 296be04fa3fa5c3e9dd87df7256c8dba *src/fanc.c
 7c22b1b500cab25872924e218f1645f5 *src/registerDynamicSymbol.c
